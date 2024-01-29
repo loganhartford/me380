@@ -70,11 +70,36 @@ int main(void)
     GPIO_Init();
 
     // Main program logic
+<<<<<<< HEAD
     while (1)
     {
         // Drive the stepper motor in a continuous loop
         DriveStepperMotor();
         HAL_Delay(100); // Adjust delay based on your motor's speed requirements
+=======
+    while (1) {
+        // Your code here
+        HAL_Delay(500);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
+        HAL_Delay(500);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_RESET);
+
+        // Increase duty cycle from 0 to Period
+        for(uint32_t duty = 0; duty < htim3.Init.Period; duty++) {
+            // duty++;
+            printf(duty);
+            __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, duty); // Update the duty cycle
+            HAL_Delay(1); // Delay for a short period
+        }
+
+        // Decrease duty cycle from Period to 0
+        for(uint32_t duty = htim3.Init.Period; duty > 0; duty--) {
+            // duty--;
+            printf(duty);
+            __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, duty); // Update the duty cycle
+            HAL_Delay(1); // Delay for a short period
+        }
+>>>>>>> 1cf70ae1aa04af9d8af061e4e921cd396bf9456a
     }
 }
 
