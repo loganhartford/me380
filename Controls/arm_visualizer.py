@@ -19,6 +19,10 @@ def plot_arm(angles):
     # Annotate end effector coordinates
     ax.annotate(f'({x2:.1f}, {y2:.1f})', (x2, y2), textcoords="offset points", xytext=(10,-10))
 
+    # Drawing a circle tangent to the origin and symmetric about the x-axis
+    circle = plt.Circle((-50, 0), 50, fill=True, color='red')
+    ax.add_artist(circle)
+    
     ax.set_xlim(-300, 300)
     ax.set_ylim(-300, 300)
     ax.set_aspect('equal', adjustable='box')
@@ -57,7 +61,7 @@ def plot(angles):
 # Starts the visualizer in a default state
 def start_vis():
     try:
-        fig = plot_arm([joint_state["theta1"], joint_state["theta2"]])
+        fig = plot_arm([robot_state["theta1"], robot_state["theta2"]])
         canvas.figure = fig
         canvas.draw()
     except Exception as e:
