@@ -1,8 +1,7 @@
 
 import math
 
-DEBUG = False
-LIGHT_DEBUG = True
+DEBUG = True
 
 # Robot Parameters
 LINK_1 = 85     # mm
@@ -64,7 +63,7 @@ def calculate_joint_angles(x, y):
             elif coord < -2*math.pi:
                 solns[i][j] = coord + 2*math.pi
 
-    if LIGHT_DEBUG:
+    if DEBUG:
         print(f"Sol 1: ({math.degrees(solns[0][0])}, {math.degrees(solns[0][1])})")
         print(f"Sol 2: ({math.degrees(solns[1][0])}, {math.degrees(solns[1][1])})")
 
@@ -97,9 +96,6 @@ robot_state = {
     "theta2": HOMED_ANGLES[1],
 }
 robot_state["x"], robot_state["y"] = calculate_cartesian_coords(HOMED_ANGLES[0], HOMED_ANGLES[1])
-
-
-
 
 # For making absolute position requests
 def abs_request(x, y):
@@ -147,10 +143,6 @@ def rel_request(rel_x, rel_y):
 
 
 calculate_joint_angles(100, 50)
-calculate_joint_angles(-150, 150)
-calculate_joint_angles(100, -200)
-calculate_joint_angles(-100, -100)
-
 
 """
 * Set limits on x and y values
