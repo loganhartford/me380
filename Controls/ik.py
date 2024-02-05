@@ -98,9 +98,6 @@ robot_state = {
 }
 robot_state["x"], robot_state["y"] = calculate_cartesian_coords(HOMED_ANGLES[0], HOMED_ANGLES[1])
 
-
-
-
 # For making absolute position requests
 def abs_request(x, y):
     angle_set = calculate_joint_angles(x , y)
