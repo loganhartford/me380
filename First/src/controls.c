@@ -9,6 +9,21 @@ double CalculateQuickestPath(double cur_theta, double targ_theta);
 double CalculateMotorDelta(double delta);
 
 /**
+ * @brief Sets the state machine to it's default state.
+ * 
+ * Should be called after the robot is homed.
+ * 
+ */
+void InitializeStateMachine(void) {
+  state.homed = 1;              // Homed yet
+  state.inmotion = 0;           // Not in motion
+  state.grasping = 0;           // Not grasping
+  state.theta1 = HOMED_THETA1;  // Link 1 in homed position
+  state.theta2 = HOMED_THETA2;  // Link 2 in home position
+  CalculateCartesianCoords(HOMED_THETA1, HOMED_THETA2, &state.x, &state.y); // Determine homed x, an y position
+}
+
+/**
  * @brief Converts cartesian coordinates to joint angles of the robot.
  * 
  * @param x coordinate.
@@ -97,21 +112,6 @@ void PrintCaresianCoords(double x, double y) {
   int decimal_part2 = abs((int)((y - int_part2) * 100)); // 2 decimal places
 
   printf("(%d.%d, %d.%d)\n\r", int_part, decimal_part, int_part2, decimal_part2);
-}
-
-/**
- * @brief Sets the state machine to it's default state.
- * 
- * Should be called after the robot is homed.
- * 
- */
-void InitializeStateMachine(void) {
-  
-  state.homed = 0;
-  state.inmotion = 0;
-  state.theta1 = HOMED_THETA1;
-  state.theta2 = HOMED_THETA2;
-  CalculateCartesianCoords(HOMED_THETA1, HOMED_THETA2, &state.x, &state.y);
 }
 
 /**

@@ -15,26 +15,24 @@ int main(void) {
   HAL_Init();
   SystemClockConfig();
   SerialInit();
-  InitializeStateMachine();
-  
-  // double solns[2][2];
-  while (1) {
-    HAL_Delay(2000);
-    printf("\n\r");
-    
-    // CalculateCartesianCoords(-122.925*M_PI/180, 162.61*M_PI/180, &x, &y);
-    // CalculateCartesianCoords(198.44*M_PI/180, -87.03*M_PI/180, &x, &y);
-    // CalculateCartesianCoords(240.33*M_PI/180, 78.07*M_PI/180, &x, &y);
-    double tempx = -150;
-    double tempy = 150;
-    // CalculateJointAngle(tempx, tempy, solns);
-    // printf("\n\r");
-    state.theta1 = HOMED_THETA1;
-    state.theta2 = HOMED_THETA2;
-    // state.theta1 = 0;
-    // state.theta2 = 0;
-    MoveTo(tempx, tempy);
 
+  // HOME THE ROBOT
+  InitializeStateMachine(); // I would maybe even put this function call in the homing function
+  
+  while (1) {
+    // HAL_Delay(2000);
+    // printf("\n\r");
+  
+    // 1. Robot is sitting idle
+    
+    // - Listen for button inputs
+    // - Listen for joystick inputs
+
+    // 2. Robot is moving to some locations
+
+    // - Executing motion
+    // - Interrupt can cancel motion
+    // - Motion is a blocking function for right now
   }
 }
 
@@ -48,6 +46,8 @@ PUTCHAR_PROTOTYPE {
   HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF); 
   return ch;
 }
+
+//
 
 /**
  * @brief Configures the clock settings.
