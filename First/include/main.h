@@ -8,6 +8,8 @@
 #include "stm32f4xx_nucleo.h"
 #include "stdio.h"
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Definition for USARTx clock resources */
 #define USARTx                           USART2
 #define USARTx_CLK_ENABLE()              __HAL_RCC_USART2_CLK_ENABLE();
