@@ -4,17 +4,20 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define LINK_1 85.0     // mm
 #define LINK_2 190.0    // mm
 
-#define DEGREES_PER_STEP (M_PI / 100.0) // Converted 1.8 degrees to radians
+#define DEGREES_PER_STEP (1.8 / 180.0 * M_PI) // Converted 1.8 degrees to radians
 #define M1_GEAR_REDUCTION 2
 #define M2_GEAR_REDUCTION 2
 #define RESOLUTION (DEGREES_PER_STEP / M1_GEAR_REDUCTION)
 
-#define HOMED_THETA1 0
-#define HOMED_THETA2 0
+#define THETA1_MIN (-160.0 / 180.0 * M_PI)
+#define THETA1_MAX (160.0 / 180.0 * M_PI)
+#define THETA2_MIN (-100.0 / 180.0 * M_PI)
+#define THETA2_MAX (100.0 / 180.0 * M_PI)
 
 
 /**
@@ -38,5 +41,6 @@ void MoveTo(double x, double y);
 void MoveBy(double rel_x, double rel_y);
 void PrintAnglesInDegrees(double theta1, double theta2);
 void PrintCaresianCoords(double x, double y);
+void PrintState(void);
 
 #endif

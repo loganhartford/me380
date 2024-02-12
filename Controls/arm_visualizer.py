@@ -7,22 +7,27 @@ import math
 from ik import *
 
 # Function to plot the arm
+
 def plot_arm(angles):
     fig, ax = plt.subplots()
-    theta1, theta2 =angles[0], angles[1]
+    theta1, theta2 = angles[0], angles[1]
     x0, y0 = 0, 0
     x1, y1 = LINK_1 * math.cos(theta1), LINK_1 * math.sin(theta1)
     x2, y2 = x1 + LINK_2 * math.cos(theta1 + theta2), y1 + LINK_2 * math.sin(theta1 + theta2)
 
     ax.plot([x0, x1, x2], [y0, y1, y2], marker='o')
 
+    # Plot end effector with a larger dot size
+    # The size parameter 's' is in points squared. You might need to adjust this value
+    ax.scatter(x2, y2, s=60**2, color='blue')  # Adjust the size as needed
+
     # Annotate end effector coordinates
     ax.annotate(f'({x2:.1f}, {y2:.1f})', (x2, y2), textcoords="offset points", xytext=(10,-10))
 
     # Drawing a circle tangent to the origin and symmetric about the x-axis
-    circle = plt.Circle((-50, 0), 50, fill=True, color='red')
+    circle = plt.Circle((0, 0), 125, fill=True, color='red')
     ax.add_artist(circle)
-    
+
     ax.set_xlim(-300, 300)
     ax.set_ylim(-300, 300)
     ax.set_aspect('equal', adjustable='box')

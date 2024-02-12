@@ -18,10 +18,10 @@ int main(void) {
 
   // HOME THE ROBOT
   InitializeStateMachine(); // I would maybe even put this function call in the homing function
-  
+
+
   while (1) {
-    // HAL_Delay(2000);
-    // printf("\n\r");
+    HAL_Delay(2000);
   
     // 1. Robot is sitting idle
     
