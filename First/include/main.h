@@ -7,8 +7,10 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_nucleo.h"
 #include "stdio.h"
+#include <math.h>
+#include <stdbool.h>
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+void ErrorHandler(void);
 
 /* Definition for USARTx clock resources */
 #define USARTx                           USART2

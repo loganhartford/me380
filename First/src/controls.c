@@ -1,4 +1,5 @@
 #include "controls.h"
+#include "motor_hal.h"
 #include "main.h"
 
 // #define DEBUG // Enables serial print statements
@@ -8,6 +9,11 @@ void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y
 double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link1);
 double CalculateMotorDelta(double delta);
 bool IsValid(double *soln);
+
+
+void dummy(void) {
+    goToAngle(M_PI, 2*M_PI, 0);  
+}
 
 /**
  * @brief Sets the state machine to it's default state.
