@@ -133,6 +133,7 @@ void Motors_Init(void) {
     Motor_Init(motor_x);
     Motor_Init(motor_y);
     Motor_Init(motor_z);
+    TIM2_Init();
 }
 
 
@@ -165,9 +166,9 @@ void goToAngle(Motor motor_x, Motor motor_y, Motor motor_z)
 
 	//loop checks if motor needs to move, if all are done function will be finished its job
 	while(motor_x.moveDone == false || motor_y.moveDone == false || motor_z.moveDone == false)
-	{
-		//if the motor is within 0.12 degrees of the target angle it has arrived to its destination
-		if(fabs(motor_x.targetAngle - motor_x.currentAngle) < 0.12)
+  {
+		// Motor x
+		if(fabs(motor_x.targetAngle - motor_x.currentAngle) < 1)
 		{
 			motor_x.moveDone = true;
 		}
@@ -175,17 +176,17 @@ void goToAngle(Motor motor_x, Motor motor_y, Motor motor_z)
 		{
 			HAL_GPIO_TogglePin(motor_x.stepPort, motor_x.stepPin);
       StepperSetRpm(motor_x.rpm);
-      if(motor_y.direction == CCW)
+      if(motor_x.direction == CCW)
       {
-        motor_y.currentAngle -= ANGLE_PER_STEP/2;
+        motor_x.currentAngle -= ANGLE_PER_STEP/2;
       }
       else
       {
-        motor_y.currentAngle += ANGLE_PER_STEP/2;
+        motor_x.currentAngle += ANGLE_PER_STEP/2;
       }
 	  }
-//------------------------------------------------------------------------------
-		if(fabs(motor_y.targetAngle - motor_y.currentAngle) < 0.12)
+    // Motor y
+		if(fabs(motor_y.targetAngle - motor_y.currentAngle) < 1)
 			{
 				motor_y.moveDone = true;
 			}
@@ -202,8 +203,8 @@ void goToAngle(Motor motor_x, Motor motor_y, Motor motor_z)
 						motor_y.currentAngle += ANGLE_PER_STEP/2;
 					}
 			}
-//------------------------------------------------------------------------------
-		if(fabs(motor_z.targetAngle - motor_z.currentAngle) < 0.12)
+    // Motor z
+		if(fabs(motor_z.targetAngle - motor_z.currentAngle) < 1)
 			{
 				motor_z.moveDone = true;
 			}
@@ -224,92 +225,12 @@ void goToAngle(Motor motor_x, Motor motor_y, Motor motor_z)
 	return;
 }
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(htim->Instance==TIM2)
-  {
-  /* USER CODE BEGIN TIM2_MspPostInit 0 */
-
-  /* USER CODE END TIM2_MspPostInit 0 */
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**TIM2 GPIO Configuration
-    PA0-WKUP     ------> TIM2_CH1
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /* USER CODE BEGIN TIM2_MspPostInit 1 */
-
-  /* USER CODE END TIM2_MspPostInit 1 */
-  }
-
-}
-
-static void MX_TIM2_Init(void)
-{
-
-  /* USER CODE BEGIN TIM2_Init 0 */
-
-  /* USER CODE END TIM2_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM2_Init 1 */
-
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 72-1;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    ErrorHandler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    ErrorHandler();
-  }
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
-  {
-    ErrorHandler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    ErrorHandler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    ErrorHandler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
-//--------------- ISR is the function to call when timer executes - interrupt service routine - when interrupt - call a function
-  /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
-}
-
 
 int main(void) {
   HAL_Init();
   SystemClockConfig();
   SerialInit();
-  TIM2_Init();
+  // TIM2_Init();
   Motors_Init();
 
   // HOME THE ROBOT
@@ -317,21 +238,17 @@ int main(void) {
 
   while (1) {
     // HAL_Delay(2000);
-    printf("1");
-    motor_x.currentAngle = 230;
+    motor_x.currentAngle = 360;
 	  motor_x.targetAngle = 0;
 	  motor_x.rpm = 50;
 	  motor_y.currentAngle = 0;
-	  motor_y.targetAngle = 200;
+	  motor_y.targetAngle = 100;
 	  motor_y.rpm = 100;
 	  motor_z.currentAngle = 0;
 	  motor_z.targetAngle = 200;
 	  motor_z.rpm = 100;
-    printf("2");
 	  goToAngle(motor_x, motor_y, motor_z);
-    printf("3");
-	  HAL_Delay(2000);
-    printf("4");
+	  HAL_Delay(4000);
 
     // StepperSetRpm(motor_x.rpm);
 
