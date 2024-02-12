@@ -18,7 +18,7 @@ TIM_HandleTypeDef htim2;
 
 static void MX_TIM2_Init(void);
 
-#define STEPS_PER_REV 3200
+#define STEPS_PER_REV 3200.0
 #define ANGLE_PER_STEP 0.1125 //360/3200 = 0.1125
 #define CW 0
 #define CCW 1
@@ -30,20 +30,20 @@ typedef struct {
     uint16_t directionPin;  // Pin to set direction
     float currentAngle;     // Current angle of the motor
     float targetAngle;      // Target angle for the motor to move to
-    int rpm;                // Rotation speed in RPM
+    float rpm;                // Rotation speed in RPM
     int direction;          // Direction of movement
     bool moveDone;          // Flag to indicate if the move is done
 } Motor;
 
 // Motor instances with improved readability and logic
 Motor motor_x = {
-    .stepPort = GPIOD,          // D7-PA8
-    .stepPin = GPIO_PIN_2,      // D7-PA8
+    .stepPort = GPIOA,          // D2-PA10
+    .stepPin = GPIO_PIN_10,     // D2-PA10
     .dirPort = GPIOB,           // D5-PB4
     .directionPin = GPIO_PIN_4, // D5-PB4
     .currentAngle = 0.0f,
     .targetAngle = 0.0f,
-    .rpm = 50,
+    .rpm = 50.0,
     .direction = CCW,
     .moveDone = false
 };
@@ -55,7 +55,7 @@ Motor motor_y = {
     .directionPin = GPIO_PIN_10,// D6-PB10
     .currentAngle = 0.0f,
     .targetAngle = 0.0f,
-    .rpm = 50,
+    .rpm = 50.0,
     .direction = CCW,
     .moveDone = false
 };
@@ -67,18 +67,35 @@ Motor motor_z = {
     .directionPin = GPIO_PIN_8, // D7-PA8
     .currentAngle = 0.0f,
     .targetAngle = 0.0f,
-    .rpm = 200,
+    .rpm = 200.0,
     .direction = CCW,
     .moveDone = false
 };
 
+void TIM2_Init(void)
+{
+    __HAL_RCC_TIM2_CLK_ENABLE();
+
+    htim2.Instance = TIM2;
+    htim2.Init.Prescaler = 88; // For 1 µs tick
+    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim2.Init.Period = 0xFFFFFFFF; // Max period
+    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+    {
+        ErrorHandler();
+    }
+
+    HAL_TIM_Base_Start(&htim2);
+}
+
 void delay (uint32_t us)
 {
-	__HAL_TIM_SET_COUNTER(&htim2, 0); //set counter to 0
-  // print(us);
-	while(__HAL_TIM_GET_COUNTER(&htim2) < us){
-    printf("%u\n\r", __HAL_TIM_GET_COUNTER(&htim2));
-  }; //wait for counter to reach entered value
+    __HAL_TIM_SET_COUNTER(&htim2, 0); // Set counter to 0
+
+    while(__HAL_TIM_GET_COUNTER(&htim2) < us){
+    }; 
 }
 
 // //calculate rpm
@@ -137,7 +154,6 @@ void goToAngle(Motor motor_x, Motor motor_y, Motor motor_z)
 	{
 		motor_z.direction = CW;
 	}
-  printf("2.1\n\f");
   //set the direction of the motors
 	HAL_GPIO_WritePin(motor_x.dirPort, motor_x.directionPin, motor_x.direction); 
 	HAL_GPIO_WritePin(motor_y.dirPort, motor_y.directionPin, motor_y.direction);
@@ -157,11 +173,8 @@ void goToAngle(Motor motor_x, Motor motor_y, Motor motor_z)
 		}
 		else
 		{
-      printf("2.2\n\f");
 			HAL_GPIO_TogglePin(motor_x.stepPort, motor_x.stepPin);
-      printf("2.3\n\f");
       StepperSetRpm(motor_x.rpm);
-      printf("2.4\n\f");
       if(motor_y.direction == CCW)
       {
         motor_y.currentAngle -= ANGLE_PER_STEP/2;
@@ -296,7 +309,7 @@ int main(void) {
   HAL_Init();
   SystemClockConfig();
   SerialInit();
-  MX_TIM2_Init();
+  TIM2_Init();
   Motors_Init();
 
   // HOME THE ROBOT
@@ -304,8 +317,7 @@ int main(void) {
 
   while (1) {
     // HAL_Delay(2000);
-  
-    printf("1\n\r");
+    printf("1");
     motor_x.currentAngle = 230;
 	  motor_x.targetAngle = 0;
 	  motor_x.rpm = 50;
@@ -315,10 +327,13 @@ int main(void) {
 	  motor_z.currentAngle = 0;
 	  motor_z.targetAngle = 200;
 	  motor_z.rpm = 100;
-    printf("2\n\r");
+    printf("2");
 	  goToAngle(motor_x, motor_y, motor_z);
-    printf("3\n\r");
+    printf("3");
 	  HAL_Delay(2000);
+    printf("4");
+
+    // StepperSetRpm(motor_x.rpm);
 
     // 1. Robot is sitting idle
     
