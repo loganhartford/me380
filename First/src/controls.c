@@ -12,7 +12,7 @@ bool IsValid(double *soln);
 
 void dummy(void)
 {
-    // goToAngle(M_PI, 2*M_PI, 0);
+    // MoveByAngle(M_PI, 2*M_PI, 0);
 }
 
 /**
@@ -298,7 +298,7 @@ void MoveTo(double x, double y)
     double realdelta1;
     double realdelta2;
     double realdeltaz;
-    goToAngle(mdelta1, mdelta2, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+    MoveByAngle(mdelta1, mdelta2, 0.0, &realdelta1, &realdelta2, &realdeltaz);
 
 #ifdef DEBUG
     PrintAnglesInDegrees(mdelta1, mdelta2);

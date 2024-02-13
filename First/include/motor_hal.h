@@ -34,6 +34,6 @@ extern Motor motor_y;
 extern Motor motor_z;
 
 void Motors_Init(void);
-void goToAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz);
+void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz);
 
 #endif

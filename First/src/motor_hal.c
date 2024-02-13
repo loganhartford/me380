@@ -7,6 +7,7 @@ void delay(uint32_t us);
 void StepperSetRpm(int rpm);
 void Motor_Init(Motor motor);
 
+// Motor Objects
 Motor motor1 = {                // X
     .stepPort = GPIOA,          // D2-PA10
     .stepPin = GPIO_PIN_10,     // D2-PA10
@@ -40,6 +41,10 @@ Motor motorz = {                // Z
     .direction = CCW,
     .moveDone = false};
 
+/**
+ * @brief Sets up timer 2 as a simple counter for creating the delay used for commutating the motors.
+ *
+ */
 void TIM2_Init(void)
 {
     __HAL_RCC_TIM2_CLK_ENABLE();
@@ -58,22 +63,11 @@ void TIM2_Init(void)
     HAL_TIM_Base_Start(&htim2);
 }
 
-void delay(uint32_t us)
-{
-    __HAL_TIM_SET_COUNTER(&htim2, 0); // Set counter to 0
-
-    while (__HAL_TIM_GET_COUNTER(&htim2) < us)
-    {
-    };
-}
-
-// //calculate rpm
-void StepperSetRpm(int rpm)
-{
-    delay(60000000 / STEPS_PER_REV / rpm); // set rpm
-}
-
-// Individual motor initialization function
+/**
+ * @brief Takes in a motor struct and initialized the associated pins.
+ *
+ * @param motor Motor struct
+ */
 void Motor_Init(Motor motor)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -101,7 +95,10 @@ void Motor_Init(Motor motor)
     HAL_GPIO_Init(motor.dirPort, &GPIO_InitStruct);
 }
 
-// Main initialization function
+/**
+ * @brief Initializes all three motors and starts the timer.
+ *
+ */
 void Motors_Init(void)
 {
     Motor_Init(motor1);
@@ -110,7 +107,17 @@ void Motors_Init(void)
     TIM2_Init();
 }
 
-void goToAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz)
+/**
+ * @brief Takes in an angle for each stepper motor and moves the motor and a pointer for each motor to store the motion completed after each iteration.
+ *
+ * @param theta1 angle to move motor 1 by.
+ * @param theta2 angle to move motor 2 by.
+ * @param thetaz angle to move motor z by.
+ * @param realtheta1 pointer to revolutions completed by motor 1.
+ * @param realtheta2 pointer to revolutions completed by motor 2.
+ * @param realthetaz pointer to revolutions completed by motor z.
+ */
+void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz)
 {
 
     motor1.targetAngle = theta1;
@@ -208,4 +215,28 @@ void goToAngle(double theta1, double theta2, double thetaz, double *realtheta1, 
     *realtheta1 = theta1;
     *realtheta2 = theta2;
     *realthetaz = thetaz;
+}
+
+/**
+ * @brief Uses timer 2 to create a delay between motor commutations.
+ *
+ * @param us - delay in microseconds
+ */
+void delay(uint32_t us)
+{
+    __HAL_TIM_SET_COUNTER(&htim2, 0); // Set counter to 0
+
+    while (__HAL_TIM_GET_COUNTER(&htim2) < us)
+    {
+    };
+}
+
+/**
+ * @brief Sets the speed of the motor by calling delay.
+ *
+ * @param rpm desired rpm of the motor.
+ */
+void StepperSetRpm(int rpm)
+{
+    delay(60000000 / STEPS_PER_REV / rpm); // set rpm
 }
