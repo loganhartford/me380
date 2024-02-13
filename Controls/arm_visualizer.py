@@ -66,6 +66,7 @@ def plot(angles):
 # Starts the visualizer in a default state
 def start_vis():
     try:
+        print(f'Current Angle: ({math.degrees(robot_state["theta1"])}, {math.degrees(robot_state["theta2"])})')
         fig = plot_arm([robot_state["theta1"], robot_state["theta2"]])
         canvas.figure = fig
         canvas.draw()

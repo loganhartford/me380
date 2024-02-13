@@ -5,7 +5,7 @@
 #include "main.h"
 #include "stm32f4xx_hal_tim.h"
 
-#define STEPS_PER_REV 3200.0
+#define STEPS_PER_REV 6400.0
 #define DEGREES_PER_STEP (360.0 / STEPS_PER_REV)
 #define RADS_PER_STEP (2 * M_PI / STEPS_PER_REV)
 #define MOTOR1_RED 1

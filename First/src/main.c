@@ -2,21 +2,24 @@
 #include "controls.h"
 #include "motor_hal.h"
 
-#define DEBUG // Enables serial print statements
+#define DEBUG                // Enables serial print statements
+#define INPUT_BUFFER_SIZE 32 // Serial reads
 
 UART_HandleTypeDef UartHandle;
 
-struct stateMachine state = {0}; // State machine
+struct stateMachine state = {0};
 
 static void SystemClockConfig(void);
 void SerialInit(void);
+double ReceiveFloat(void);
+void RecieveCoordinates(double *x, double *y);
+void SerialDemo(void);
 
 int main(void)
 {
   HAL_Init();
   SystemClockConfig();
   SerialInit();
-  // TIM2_Init();
   Motors_Init();
 
   // HOME THE ROBOT
@@ -24,10 +27,7 @@ int main(void)
 
   while (1)
   {
-    // HAL_Delay(2000);
-    // MoveTo(150, 150);
-    // HAL_Delay(4000);
-    // MoveTo(-150, -150);
+    SerialDemo(); // This will halt execution
 
     // StepperSetRpm(motor_x.rpm);
 
@@ -146,4 +146,76 @@ void SerialInit(void)
   {
     ErrorHandler();
   }
+}
+
+/**
+ * @brief Halts execution until a return character is entered into the serial monitor. Tries to convert the input into a double.
+ *
+ * @return double - serial monitor input
+ */
+double ReceiveFloat(void)
+{
+  char inputBuffer[INPUT_BUFFER_SIZE];
+  uint8_t receivedChar;
+  double receivedFloat;
+
+  memset(inputBuffer, 0, INPUT_BUFFER_SIZE); // Clear input buffer
+  int bufferIndex = 0;
+
+  while (1)
+  {
+    // Receive a single character
+    if (HAL_UART_Receive(&UartHandle, &receivedChar, 1, 0xFFFF) == HAL_OK)
+    {
+      // Check for end of number input (e.g., newline character)
+      if (receivedChar == '\n' || receivedChar == '\r')
+      {
+        inputBuffer[bufferIndex] = '\0'; // Null-terminate the string
+        break;                           // Exit the loop
+      }
+      else
+      {
+        // Store the received character into the buffer
+        if (bufferIndex < INPUT_BUFFER_SIZE - 1) // Prevent buffer overflow
+        {
+          inputBuffer[bufferIndex++] = receivedChar;
+        }
+      }
+    }
+  }
+  // Convert the received string to a floating-point number
+  receivedFloat = atof(inputBuffer);
+
+  return receivedFloat;
+}
+
+/**
+ * @brief Halts program execution and asks user to input an x and a y coordinate.
+ *
+ * @param x pointer to x coordinate
+ * @param y pointer to y cordinate
+ */
+void RecieveCoordinates(double *x, double *y)
+{
+  printf("Enter in disired X coordinate: \n\r");
+  *x = ReceiveFloat();
+  printf("Enter in disred Y corrdinate: \n\r");
+  *y = ReceiveFloat();
+}
+
+/**
+ * @brief Runs a demo which allows the user to send the robot x and y position commands and move the motors.
+ *
+ */
+void SerialDemo(void)
+{
+  PrintState();
+
+  double x, y;
+  RecieveCoordinates(&x, &y);
+  printf("Moving to: ");
+  PrintCaresianCoords(x, y);
+  MoveTo(x, y);
+  printf("Done.\n\r");
+  printf("\n\r");
 }

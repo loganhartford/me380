@@ -10,15 +10,16 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link
 double CalculateMotorDelta(double delta);
 bool IsValid(double *soln);
 
-void dummy(void){
+void dummy(void)
+{
     // goToAngle(M_PI, 2*M_PI, 0);
 }
 
 /**
  * @brief Initializes the robot state
- * 
+ *
  */
-    void InitializeStateMachine(void)
+void InitializeStateMachine(void)
 {
     state.homed = 1;                                                      // Homed yet
     state.inmotion = 0;                                                   // Not in motion
@@ -108,7 +109,9 @@ void PrintState()
     printf("Homed: %s\n\r", state.homed ? "Yes" : "No");
     printf("In Motion: %s\n\r", state.inmotion ? "Yes" : "No");
     printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
+    printf("Current Angle: ");
     PrintAnglesInDegrees(state.theta1, state.theta2);
+    printf("Current coords: ");
     PrintCaresianCoords(state.x, state.y);
     printf("\n\r");
 }
@@ -187,18 +190,18 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link
     // Normalize the delta
     if (delta > M_PI)
     {
-        return delta - 2 * M_PI;
+        delta = delta - 2 * M_PI;
     }
     else if (delta < -M_PI)
     {
-        return delta + 2 * M_PI;
+        delta = delta + 2 * M_PI;
     }
     // Prevent the robot from moving through the restricted angle
     if ((cur_theta + delta) > THETA_MAX)
     {
         return delta - 2 * M_PI;
     }
-    else if ((cur_theta - delta) < THETA_MIN)
+    else if ((cur_theta + delta) < THETA_MIN)
     {
         return delta + 2 * M_PI;
     }
@@ -300,6 +303,7 @@ void MoveTo(double x, double y)
 #ifdef DEBUG
     PrintAnglesInDegrees(mdelta1, mdelta2);
 #endif
+    printf("Angle delatas: ");
     PrintAnglesInDegrees(mdelta1, mdelta2);
 
     // Update the state machine

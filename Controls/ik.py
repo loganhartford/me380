@@ -3,7 +3,7 @@ import math
 
 DEBUG = False
 LIGHT_DEBUG = False
-VISUALIZER = False
+VISUALIZER = True
 
 # Robot Parameters
 LINK_1 = 85     # mm
@@ -166,12 +166,15 @@ def abs_request(x, y):
     mdelta1 = calculate_motor_delta(delta1)
     mdelta2 = calculate_motor_delta(delta2)
 
+    print(f'Angle Deltas: ({math.degrees(mdelta1)}, {math.degrees(mdelta2)})')
+
     # Update the state machine
     robot_state["theta1"] = cur_theta1 + mdelta1
     robot_state["theta2"] = cur_theta2 + mdelta2    
     robot_state["x"], robot_state["y"] = calculate_cartesian_coords(robot_state["theta1"], robot_state["theta2"])
     
     if VISUALIZER:
+        print(f'Current Angle: ({math.degrees(robot_state["theta1"])}, {math.degrees(robot_state["theta2"])})')
         return best
     return mdelta1, mdelta2
 
