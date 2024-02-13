@@ -14,14 +14,10 @@ void dummy(void){
     // goToAngle(M_PI, 2*M_PI, 0);
 }
 
-    /**
-     * @brief
-     *
-     */
-    *
-    *Should be called after the robot is homed.
-         *
-             * /
+/**
+ * @brief Initializes the robot state
+ * 
+ */
     void InitializeStateMachine(void)
 {
     state.homed = 1;                                                      // Homed yet

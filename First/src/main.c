@@ -25,9 +25,9 @@ int main(void)
   while (1)
   {
     // HAL_Delay(2000);
-    MoveTo(150, 150);
-    HAL_Delay(4000);
-    MoveTo(-150, -150);
+    // MoveTo(150, 150);
+    // HAL_Delay(4000);
+    // MoveTo(-150, -150);
 
     // StepperSetRpm(motor_x.rpm);
 
