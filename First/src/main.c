@@ -1,142 +1,221 @@
-#include "stm32f4xx.h" // Include the STM32F4xx HAL library
-#include "stm32f4xx_hal.h"
+#include "main.h"
+#include "controls.h"
+#include "motor_hal.h"
 
-// Function prototypes
-void SystemClock_Config(void);
-void TIM3_Init(void);
-void GPIO_Init(void);
+#define DEBUG                // Enables serial print statements
+#define INPUT_BUFFER_SIZE 32 // Serial reads
 
-#define IN1_PIN GPIO_PIN_0
-#define IN2_PIN GPIO_PIN_1
-#define IN3_PIN GPIO_PIN_2
-#define IN4_PIN GPIO_PIN_3
+UART_HandleTypeDef UartHandle;
 
-// Function to initialize GPIO pins
-void GPIO_Init(void)
-{
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+struct stateMachine state = {0};
 
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-
-    // Configure IN1, IN2, IN3, and IN4 pins as outputs
-    GPIO_InitStruct.Pin = IN1_PIN | IN2_PIN | IN3_PIN | IN4_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-}
-// TIM handle declaration
-TIM_HandleTypeDef htim3;
-
-void DriveStepperMotor(void)
-{
-    // Step 1
-    HAL_GPIO_WritePin(GPIOA, IN1_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOA, IN2_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN3_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN4_PIN, GPIO_PIN_RESET);
-    HAL_Delay(10);
-
-    // Step 2
-    HAL_GPIO_WritePin(GPIOA, IN1_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN2_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOA, IN3_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN4_PIN, GPIO_PIN_RESET);
-    HAL_Delay(10);
-
-    // Step 3
-    HAL_GPIO_WritePin(GPIOA, IN1_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN2_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN3_PIN, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOA, IN4_PIN, GPIO_PIN_RESET);
-    HAL_Delay(10);
-
-    // Step 4
-    HAL_GPIO_WritePin(GPIOA, IN1_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN2_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN3_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, IN4_PIN, GPIO_PIN_SET);
-    HAL_Delay(10);
-}
+static void SystemClockConfig(void);
+void SerialInit(void);
+double ReceiveFloat(void);
+void RecieveCoordinates(double *x, double *y);
+void SerialDemo(void);
 
 int main(void)
 {
-    // Initialize the HAL Library
-    HAL_Init();
+  HAL_Init();
+  SystemClockConfig();
+  SerialInit();
+  Motors_Init();
 
-    // Configure the system clock
-    // SystemClock_Config();
+  // HOME THE ROBOT
+  InitializeStateMachine(); // I would maybe even put this function call in the homing function
 
-    // Initialize GPIO for stepper motor control
-    GPIO_Init();
+  while (1)
+  {
+    SerialDemo(); // This will halt execution
 
-    // Main program logic
-<<<<<<< HEAD
+    // StepperSetRpm(motor_x.rpm);
+
+    // 1. Robot is sitting idle
+
+    // - Listen for button inputs
+    // - Listen for joystick inputs
+
+    // 2. Robot is moving to some locations
+
+    // - Executing motion
+    // - Interrupt can cancel motion
+    // - Motion is a blocking function for right now
+  }
+}
+
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
+
+PUTCHAR_PROTOTYPE
+{
+  HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
+  return ch;
+}
+
+//
+
+/**
+ * @brief Configures the clock settings.
+ *
+ */
+void SystemClockConfig(void)
+{
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  HAL_StatusTypeDef ret = HAL_OK;
+
+  /* Enable Power Control clock */
+  __HAL_RCC_PWR_CLK_ENABLE();
+
+  /* The voltage scaling allows optimizing the power consumption when the device is
+     clocked below the maximum system frequency, to update the voltage scaling value
+     regarding system frequency refer to product datasheet.  */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+  /* Enable HSI Oscillator and activate PLL with HSI as source */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = 0x10;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 360;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
+  RCC_OscInitStruct.PLL.PLLR = 6;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    ErrorHandler();
+  }
+
+  /* Activate the OverDrive to reach the 180 MHz Frequency */
+  ret = HAL_PWREx_EnableOverDrive();
+  if (ret != HAL_OK)
+  {
     while (1)
     {
-        // Drive the stepper motor in a continuous loop
-        DriveStepperMotor();
-        HAL_Delay(100); // Adjust delay based on your motor's speed requirements
-=======
-    while (1) {
-        // Your code here
-        HAL_Delay(500);
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
-        HAL_Delay(500);
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_RESET);
-
-        // Increase duty cycle from 0 to Period
-        for(uint32_t duty = 0; duty < htim3.Init.Period; duty++) {
-            // duty++;
-            printf(duty);
-            __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, duty); // Update the duty cycle
-            HAL_Delay(1); // Delay for a short period
-        }
-
-        // Decrease duty cycle from Period to 0
-        for(uint32_t duty = htim3.Init.Period; duty > 0; duty--) {
-            // duty--;
-            printf(duty);
-            __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, duty); // Update the duty cycle
-            HAL_Delay(1); // Delay for a short period
-        }
->>>>>>> 1cf70ae1aa04af9d8af061e4e921cd396bf9456a
+      ;
     }
+  }
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
+     clocks dividers */
+  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    ErrorHandler();
+  }
 }
 
-void TIM3_Init(void)
+/**
+ * @brief Will hold the device in an infinte look on error.
+ *
+ */
+void ErrorHandler(void)
 {
-    // Enable TIM3 clock
-    __HAL_RCC_TIM3_CLK_ENABLE();
-
-    TIM_OC_InitTypeDef sConfigOC = {0};
-
-    htim3.Instance = TIM3;
-    htim3.Init.Prescaler = 0; // Prescaler value
-    htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim3.Init.Period = 999; // Adjust this value to change the PWM frequency
-    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    HAL_TIM_PWM_Init(&htim3);
-
-    // PWM configuration for TIM3 Channel 1
-    sConfigOC.OCMode = TIM_OCMODE_PWM1;
-    sConfigOC.Pulse = 500; // Adjust this value to change the duty cycle
-    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1);
+  /* Turn LED2 on */
+  BSP_LED_On(LED2);
+  while (1)
+  {
+  }
 }
-// When error is encountered. Error_Handler is used to halt the program - stops microcontroller
-// from doing any other instuctions
-void Error_Handler(void)
+
+/**
+ * @brief Initializes UART for printing to the serial monitor.
+ *
+ */
+void SerialInit(void)
 {
-    // Error handling code
-    while (1)
+  UartHandle.Instance = USARTx;
+  UartHandle.Init.BaudRate = 9600;
+  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+  UartHandle.Init.StopBits = UART_STOPBITS_1;
+  UartHandle.Init.Parity = UART_PARITY_NONE;
+  UartHandle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  UartHandle.Init.Mode = UART_MODE_TX_RX;
+  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+
+  if (HAL_UART_Init(&UartHandle) != HAL_OK)
+  {
+    ErrorHandler();
+  }
+}
+
+/**
+ * @brief Halts execution until a return character is entered into the serial monitor. Tries to convert the input into a double.
+ *
+ * @return double - serial monitor input
+ */
+double ReceiveFloat(void)
+{
+  char inputBuffer[INPUT_BUFFER_SIZE];
+  uint8_t receivedChar;
+  double receivedFloat;
+
+  memset(inputBuffer, 0, INPUT_BUFFER_SIZE); // Clear input buffer
+  int bufferIndex = 0;
+
+  while (1)
+  {
+    // Receive a single character
+    if (HAL_UART_Receive(&UartHandle, &receivedChar, 1, 0xFFFF) == HAL_OK)
     {
-        // Infinite loop or other error handling mechanism
+      // Check for end of number input (e.g., newline character)
+      if (receivedChar == '\n' || receivedChar == '\r')
+      {
+        inputBuffer[bufferIndex] = '\0'; // Null-terminate the string
+        break;                           // Exit the loop
+      }
+      else
+      {
+        // Store the received character into the buffer
+        if (bufferIndex < INPUT_BUFFER_SIZE - 1) // Prevent buffer overflow
+        {
+          inputBuffer[bufferIndex++] = receivedChar;
+        }
+      }
     }
+  }
+  // Convert the received string to a floating-point number
+  receivedFloat = atof(inputBuffer);
+
+  return receivedFloat;
 }
-// this is an ISR, used by the HAL to track milliseconds
-void SysTick_Handler(void)
+
+/**
+ * @brief Halts program execution and asks user to input an x and a y coordinate.
+ *
+ * @param x pointer to x coordinate
+ * @param y pointer to y cordinate
+ */
+void RecieveCoordinates(double *x, double *y)
 {
-    HAL_IncTick();
+  printf("Enter in disired X coordinate: \n\r");
+  *x = ReceiveFloat();
+  printf("Enter in disred Y corrdinate: \n\r");
+  *y = ReceiveFloat();
+}
+
+/**
+ * @brief Runs a demo which allows the user to send the robot x and y position commands and move the motors.
+ *
+ */
+void SerialDemo(void)
+{
+  PrintState();
+
+  double x, y;
+  RecieveCoordinates(&x, &y);
+  printf("Moving to: ");
+  PrintCaresianCoords(x, y);
+  MoveTo(x, y);
+  printf("Done.\n\r");
+  printf("\n\r");
 }
