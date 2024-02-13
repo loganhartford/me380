@@ -16,16 +16,17 @@
 #define CW 0
 #define CCW 1
 
-typedef struct {
-    GPIO_TypeDef* stepPort; // Port of the motor
+typedef struct
+{
+    GPIO_TypeDef *stepPort; // Port of the motor
     uint16_t stepPin;       // Pin for stepping
-    GPIO_TypeDef* dirPort;
-    uint16_t directionPin;  // Pin to set direction
-    double currentAngle;     // Current angle of the motor
-    double targetAngle;      // Target angle for the motor to move to
-    double rpm;                // Rotation speed in RPM
-    int direction;          // Direction of movement
-    bool moveDone;          // Flag to indicate if the move is done
+    GPIO_TypeDef *dirPort;
+    uint16_t directionPin; // Pin to set direction
+    double currentAngle;   // Current angle of the motor
+    double targetAngle;    // Target angle for the motor to move to
+    double rpm;            // Rotation speed in RPM
+    int direction;         // Direction of movement
+    bool moveDone;         // Flag to indicate if the move is done
 } Motor;
 
 extern Motor motor_x;
@@ -33,6 +34,6 @@ extern Motor motor_y;
 extern Motor motor_z;
 
 void Motors_Init(void);
-void goToAngle(double theta1, double theta2, double thetaz);
+void goToAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz);
 
 #endif

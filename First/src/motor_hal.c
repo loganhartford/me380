@@ -7,7 +7,7 @@ void delay(uint32_t us);
 void StepperSetRpm(int rpm);
 void Motor_Init(Motor motor);
 
-Motor motor1 = { // X
+Motor motor1 = {                // X
     .stepPort = GPIOA,          // D2-PA10
     .stepPin = GPIO_PIN_10,     // D2-PA10
     .dirPort = GPIOB,           // D5-PB4
@@ -16,22 +16,20 @@ Motor motor1 = { // X
     .targetAngle = 0.0,
     .rpm = 50.0,
     .direction = CCW,
-    .moveDone = false
-};
+    .moveDone = false};
 
-Motor motor2 = { // Y
-    .stepPort = GPIOB,          // D3-PB3
-    .stepPin = GPIO_PIN_3,      // D3-PB3
-    .dirPort = GPIOB,           // D6-PB10
-    .directionPin = GPIO_PIN_10,// D6-PB10
+Motor motor2 = {                 // Y
+    .stepPort = GPIOB,           // D3-PB3
+    .stepPin = GPIO_PIN_3,       // D3-PB3
+    .dirPort = GPIOB,            // D6-PB10
+    .directionPin = GPIO_PIN_10, // D6-PB10
     .currentAngle = 0.0,
     .targetAngle = 0.0,
     .rpm = 50.0,
     .direction = CCW,
-    .moveDone = false
-};
+    .moveDone = false};
 
-Motor motorz = { // Z
+Motor motorz = {                // Z
     .stepPort = GPIOB,          // D4-PB5
     .stepPin = GPIO_PIN_5,      // D4-PB5
     .dirPort = GPIOA,           // D7-PA8
@@ -40,8 +38,7 @@ Motor motorz = { // Z
     .targetAngle = 0.0,
     .rpm = 200.0,
     .direction = CCW,
-    .moveDone = false
-};
+    .moveDone = false};
 
 void TIM2_Init(void)
 {
@@ -61,28 +58,33 @@ void TIM2_Init(void)
     HAL_TIM_Base_Start(&htim2);
 }
 
-void delay (uint32_t us)
+void delay(uint32_t us)
 {
     __HAL_TIM_SET_COUNTER(&htim2, 0); // Set counter to 0
 
-    while(__HAL_TIM_GET_COUNTER(&htim2) < us){
-    }; 
+    while (__HAL_TIM_GET_COUNTER(&htim2) < us)
+    {
+    };
 }
 
 // //calculate rpm
 void StepperSetRpm(int rpm)
 {
-	delay(60000000/STEPS_PER_REV/rpm); //set rpm
+    delay(60000000 / STEPS_PER_REV / rpm); // set rpm
 }
 
 // Individual motor initialization function
-void Motor_Init(Motor motor) {
+void Motor_Init(Motor motor)
+{
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     // Enable GPIO Clocks
-    if (motor.stepPort == GPIOA) {
+    if (motor.stepPort == GPIOA)
+    {
         __HAL_RCC_GPIOA_CLK_ENABLE();
-    } else if (motor.stepPort == GPIOB) {
+    }
+    else if (motor.stepPort == GPIOB)
+    {
         __HAL_RCC_GPIOB_CLK_ENABLE();
     } // Add more conditions if using other GPIO ports
 
@@ -100,15 +102,15 @@ void Motor_Init(Motor motor) {
 }
 
 // Main initialization function
-void Motors_Init(void) {
+void Motors_Init(void)
+{
     Motor_Init(motor1);
     Motor_Init(motor2);
     Motor_Init(motorz);
     TIM2_Init();
 }
 
-
-void goToAngle(double theta1, double theta2, double thetaz)
+void goToAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz)
 {
 
     motor1.targetAngle = theta1;
@@ -119,88 +121,91 @@ void goToAngle(double theta1, double theta2, double thetaz)
     motor2.currentAngle = 0;
     motorz.currentAngle = 0;
 
-	motor1.direction = CCW;
-	motor2.direction = CCW;
-	motorz.direction = CCW;
+    motor1.direction = CCW;
+    motor2.direction = CCW;
+    motorz.direction = CCW;
 
-	if(motor1.targetAngle - motor1.currentAngle > 0) //now every motor knows its direction
-	{
-		motor1.direction = CW;
-	}
-	if(motor2.targetAngle - motor2.currentAngle > 0)
-	{
-		motor2.direction = CW;
-	}
-	if(motorz.targetAngle - motorz.currentAngle > 0)
-	{
-		motorz.direction = CW;
-	}
-  //set the direction of the motors
-	HAL_GPIO_WritePin(motor1.dirPort, motor1.directionPin, motor1.direction); 
-	HAL_GPIO_WritePin(motor2.dirPort, motor2.directionPin, motor2.direction);
-	HAL_GPIO_WritePin(motorz.dirPort, motorz.directionPin, motorz.direction);
+    if (motor1.targetAngle - motor1.currentAngle > 0) // now every motor knows its direction
+    {
+        motor1.direction = CW;
+    }
+    if (motor2.targetAngle - motor2.currentAngle > 0)
+    {
+        motor2.direction = CW;
+    }
+    if (motorz.targetAngle - motorz.currentAngle > 0)
+    {
+        motorz.direction = CW;
+    }
+    // set the direction of the motors
+    HAL_GPIO_WritePin(motor1.dirPort, motor1.directionPin, motor1.direction);
+    HAL_GPIO_WritePin(motor2.dirPort, motor2.directionPin, motor2.direction);
+    HAL_GPIO_WritePin(motorz.dirPort, motorz.directionPin, motorz.direction);
 
-	motor1.moveDone = false;
-	motor2.moveDone = false;
-	motorz.moveDone = false;
+    motor1.moveDone = false;
+    motor2.moveDone = false;
+    motorz.moveDone = false;
 
-	//loop checks if motor needs to move, if all are done function will be finished its job
-	while(motor1.moveDone == false || motor2.moveDone == false || motorz.moveDone == false)
-  {
-		// Motor x
-		if(fabs(motor1.targetAngle - motor1.currentAngle) <= RADS_PER_STEP)
-		{
-			motor1.moveDone = true;
-		}
-		else
-		{
-        HAL_GPIO_TogglePin(motor1.stepPort, motor1.stepPin);
-        StepperSetRpm(motor1.rpm);
-        if(motor1.direction == CCW)
+    // loop checks if motor needs to move, if all are done function will be finished its job
+    while (motor1.moveDone == false || motor2.moveDone == false || motorz.moveDone == false)
+    {
+        // Motor x
+        if (fabs(motor1.targetAngle - motor1.currentAngle) <= RADS_PER_STEP)
         {
-            motor1.currentAngle -= RADS_PER_STEP/MOTOR1_RED;
+            motor1.moveDone = true;
         }
         else
         {
-            motor1.currentAngle += RADS_PER_STEP/MOTOR1_RED;
-        }
+            HAL_GPIO_TogglePin(motor1.stepPort, motor1.stepPin);
+            StepperSetRpm(motor1.rpm);
+            if (motor1.direction == CCW)
+            {
+                motor1.currentAngle -= RADS_PER_STEP / MOTOR1_RED;
+            }
+            else
+            {
+                motor1.currentAngle += RADS_PER_STEP / MOTOR1_RED;
+            }
         }
         // Motor y
-        if(fabs(motor2.targetAngle - motor2.currentAngle) <= RADS_PER_STEP)
+        if (fabs(motor2.targetAngle - motor2.currentAngle) <= RADS_PER_STEP)
+        {
+            motor2.moveDone = true;
+        }
+        else
+        {
+            HAL_GPIO_TogglePin(motor2.stepPort, motor2.stepPin);
+            StepperSetRpm(motor2.rpm);
+            if (motor2.direction == CCW)
             {
-                motor2.moveDone = true;
+                motor2.currentAngle -= RADS_PER_STEP / MOTOR2_RED;
             }
             else
             {
-                    HAL_GPIO_TogglePin(motor2.stepPort, motor2.stepPin);
-                    StepperSetRpm(motor2.rpm);
-                    if(motor2.direction == CCW)
-                    {
-                        motor2.currentAngle -= RADS_PER_STEP/MOTOR2_RED;
-                    }
-                    else
-                    {
-                        motor2.currentAngle += RADS_PER_STEP/MOTOR2_RED;
-                    }
+                motor2.currentAngle += RADS_PER_STEP / MOTOR2_RED;
             }
+        }
         // Motor z
-        if(fabs(motorz.targetAngle - motorz.currentAngle) <= Z_RADS_PER_STEP)
+        if (fabs(motorz.targetAngle - motorz.currentAngle) <= Z_RADS_PER_STEP)
+        {
+            motorz.moveDone = true;
+        }
+        else
+        {
+            HAL_GPIO_TogglePin(motorz.stepPort, motorz.stepPin);
+            StepperSetRpm(motorz.rpm);
+            if (motorz.direction == CCW)
             {
-                motorz.moveDone = true;
+                motorz.currentAngle -= Z_RADS_PER_STEP;
             }
             else
             {
-                    HAL_GPIO_TogglePin(motorz.stepPort, motorz.stepPin);
-                    StepperSetRpm(motorz.rpm);
-                    if(motorz.direction == CCW)
-                    {
-                        motorz.currentAngle -= Z_RADS_PER_STEP;
-                    }
-                    else
-                    {
-                        motorz.currentAngle += Z_RADS_PER_STEP;
-                    }
+                motorz.currentAngle += Z_RADS_PER_STEP;
             }
+        }
     }
-    return;
+    // This isn't proper yet, return the actual angle deltas
+    *realtheta1 = theta1;
+    *realtheta2 = theta2;
+    *realthetaz = thetaz;
 }

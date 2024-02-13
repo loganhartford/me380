@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include "motor_hal.h"
 
-#define LINK_1 85.0     // mm
-#define LINK_2 190.0    // mm
+#define LINK_1 85.0  // mm
+#define LINK_2 190.0 // mm
 
 #define M1_GEAR_REDUCTION 2
 #define M2_GEAR_REDUCTION 2
@@ -19,19 +19,19 @@
 #define THETA2_MIN (-100.0 / 180.0 * M_PI)
 #define THETA2_MAX (100.0 / 180.0 * M_PI)
 
-
 /**
  * @brief Robot state machine
- * 
+ *
  */
-struct stateMachine {
-  bool homed;       // Has the robot been homed
-  bool inmotion;    // Is the robot in motion
-  bool grasping;    // Is the robot grasping and object
-  double theta1;    // Link 1 angle
-  double theta2;    // Link 2 angle
-  double x;         // X position of end effector
-  double y;         // Y position of end effector
+struct stateMachine
+{
+    bool homed;    // Has the robot been homed
+    bool inmotion; // Is the robot in motion
+    bool grasping; // Is the robot grasping and object
+    double theta1; // Link 1 angle
+    double theta2; // Link 2 angle
+    double x;      // X position of end effector
+    double y;      // Y position of end effector
 };
 
 extern struct stateMachine state;
