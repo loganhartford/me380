@@ -6,12 +6,12 @@
 #include "stm32f4xx_hal_tim.h"
 
 #define STEPS_PER_REV 6400.0
-#define DEGREES_PER_STEP (360.0 / STEPS_PER_REV)
-#define RADS_PER_STEP (2 * M_PI / STEPS_PER_REV)
-#define MOTOR1_RED 1
-#define MOTOR2_RED 2
+// #define DEGREES_PER_STEP (360.0 / STEPS_PER_REV)
+// #define RADS_PER_STEP (2 * M_PI / STEPS_PER_REV)
+// #define MOTOR1_RED 1
+// #define MOTOR2_RED 2
 #define Z_STEPS_PER_REV 400
-#define Z_RADS_PER_STEP (2 * M_PI / Z_STEPS_PER_REV)
+// #define Z_RADS_PER_STEP (2 * M_PI / Z_STEPS_PER_REV)
 
 #define CW 0
 #define CCW 1

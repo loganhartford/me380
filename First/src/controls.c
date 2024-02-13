@@ -214,8 +214,9 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link
  * @param delta angle you want to move the motor by.
  * @return double - the motor acceptable angle.
  */
-double CalculateMotorDelta(double delta)
+double CalculateMotorDelta(double delta, Motor *motor)
 {
+
     return round(delta / RESOLUTION) * RESOLUTION;
 }
 

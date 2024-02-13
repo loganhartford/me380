@@ -148,7 +148,9 @@ void StepMotor(Motor *motor)
  */
 void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz)
 {
-
+    // 1. Calculate the number of steps for each motor
+    // 2. Set the direction based on the sign of the request
+    // 3. Increment the counters each iteration
     motor1.targetAngle = theta1;
     motor2.targetAngle = theta2;
     motorz.targetAngle = thetaz;
