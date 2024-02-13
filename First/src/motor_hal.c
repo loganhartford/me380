@@ -8,7 +8,8 @@ void StepperSetRpm(int rpm);
 void Motor_Init(Motor motor);
 
 // Motor Objects
-Motor motor1 = {                // X
+Motor motor1 = {
+    // X
     .stepPort = GPIOA,          // D2-PA10
     .stepPin = GPIO_PIN_10,     // D2-PA10
     .dirPort = GPIOB,           // D5-PB4
@@ -17,7 +18,10 @@ Motor motor1 = {                // X
     .targetAngle = 0.0,
     .rpm = 50.0,
     .direction = CCW,
-    .moveDone = false};
+    .moveDone = false,
+    .radsPerStep = 2 * M_PI / STEPS_PER_REV,
+    .reduction = 1,
+};
 
 Motor motor2 = {                 // Y
     .stepPort = GPIOB,           // D3-PB3
@@ -28,7 +32,9 @@ Motor motor2 = {                 // Y
     .targetAngle = 0.0,
     .rpm = 50.0,
     .direction = CCW,
-    .moveDone = false};
+    .moveDone = false,
+    .radsPerStep = 2 * M_PI / STEPS_PER_REV,
+    .reduction = 2};
 
 Motor motorz = {                // Z
     .stepPort = GPIOB,          // D4-PB5
@@ -39,7 +45,9 @@ Motor motorz = {                // Z
     .targetAngle = 0.0,
     .rpm = 200.0,
     .direction = CCW,
-    .moveDone = false};
+    .moveDone = false,
+    .radsPerStep = 2 * M_PI / Z_STEPS_PER_REV,
+    .reduction = 1};
 
 /**
  * @brief Sets up timer 2 as a simple counter for creating the delay used for commutating the motors.
@@ -107,6 +115,27 @@ void Motors_Init(void)
     TIM2_Init();
 }
 
+void StepMotor(Motor *motor)
+{
+    if (fabs(motor->targetAngle - motor->currentAngle) <= motor->radsPerStep)
+    {
+        motor->moveDone = true;
+    }
+    else
+    {
+        HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
+        StepperSetRpm(motor->rpm);
+        if (motor->direction == CCW)
+        {
+            motor->currentAngle -= motor->radsPerStep / motor->reduction;
+        }
+        else
+        {
+            motor->currentAngle += motor->radsPerStep / motor->reduction;
+        }
+    }
+}
+
 /**
  * @brief Takes in an angle for each stepper motor and moves the motor and a pointer for each motor to store the motion completed after each iteration.
  *
@@ -156,60 +185,9 @@ void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1
     // loop checks if motor needs to move, if all are done function will be finished its job
     while (motor1.moveDone == false || motor2.moveDone == false || motorz.moveDone == false)
     {
-        // Motor x
-        if (fabs(motor1.targetAngle - motor1.currentAngle) <= RADS_PER_STEP)
-        {
-            motor1.moveDone = true;
-        }
-        else
-        {
-            HAL_GPIO_TogglePin(motor1.stepPort, motor1.stepPin);
-            StepperSetRpm(motor1.rpm);
-            if (motor1.direction == CCW)
-            {
-                motor1.currentAngle -= RADS_PER_STEP / MOTOR1_RED;
-            }
-            else
-            {
-                motor1.currentAngle += RADS_PER_STEP / MOTOR1_RED;
-            }
-        }
-        // Motor y
-        if (fabs(motor2.targetAngle - motor2.currentAngle) <= RADS_PER_STEP)
-        {
-            motor2.moveDone = true;
-        }
-        else
-        {
-            HAL_GPIO_TogglePin(motor2.stepPort, motor2.stepPin);
-            StepperSetRpm(motor2.rpm);
-            if (motor2.direction == CCW)
-            {
-                motor2.currentAngle -= RADS_PER_STEP / MOTOR2_RED;
-            }
-            else
-            {
-                motor2.currentAngle += RADS_PER_STEP / MOTOR2_RED;
-            }
-        }
-        // Motor z
-        if (fabs(motorz.targetAngle - motorz.currentAngle) <= Z_RADS_PER_STEP)
-        {
-            motorz.moveDone = true;
-        }
-        else
-        {
-            HAL_GPIO_TogglePin(motorz.stepPort, motorz.stepPin);
-            StepperSetRpm(motorz.rpm);
-            if (motorz.direction == CCW)
-            {
-                motorz.currentAngle -= Z_RADS_PER_STEP;
-            }
-            else
-            {
-                motorz.currentAngle += Z_RADS_PER_STEP;
-            }
-        }
+        StepMotor(&motor1);
+        StepMotor(&motor2);
+        StepMotor(&motorz);
     }
     // This isn't proper yet, return the actual angle deltas
     *realtheta1 = theta1;

@@ -27,6 +27,8 @@ typedef struct
     double rpm;            // Rotation speed in RPM
     int direction;         // Direction of movement
     bool moveDone;         // Flag to indicate if the move is done
+    double radsPerStep;    // Radians per step of the motor
+    int reduction;         // Gear reduction of the motor
 } Motor;
 
 extern Motor motor_x;
