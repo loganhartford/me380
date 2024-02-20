@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "motor_hal.h"
+#include "main.h"
 
 #define LINK_1 85.0  // mm
 #define LINK_2 190.0 // mm
@@ -28,9 +29,9 @@ struct stateMachine
     double theta2; // Link 2 angle
     double x;      // X position of end effector
     double y;      // Y position of end effector
-    bool limitTrigger1;
-    bool limitTrigger2;
-    bool limitTriggerz;
+    // bool limitTrigger1;
+    // bool limitTrigger2;
+    // bool limitTriggerz;
 };
 
 extern struct stateMachine state;

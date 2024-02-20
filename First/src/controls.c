@@ -1,6 +1,6 @@
 #include "controls.h"
 #include "motor_hal.h"
-#include "main.h"
+#include "limit_switch_hal.h"
 
 // #define DEBUG // Enables serial print statements
 
@@ -27,9 +27,9 @@ void InitializeStateMachine(void)
     state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
     state.theta2 = motor2.thetaMax;                                           // Link 2 in home position
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
-    // state.limitTrigger1 = ;
-    // state.limitTrigger2;
-    // state.limitTriggerz;
+    // state.limitTrigger1 = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta1Pin);
+    // state.limitTrigger2 = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta2Pin);
+    // state.limitTriggerz = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.thetazPin);
 }
 
 /**
@@ -112,11 +112,13 @@ void PrintState()
     printf("Homed: %s\n\r", state.homed ? "Yes" : "No");
     printf("In Motion: %s\n\r", state.inmotion ? "Yes" : "No");
     printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
-    printf("Current Angle: ");
-    PrintAnglesInDegrees(state.theta1, state.theta2);
-    printf("Current coords: ");
-    PrintCaresianCoords(state.x, state.y);
-    printf("\n\r");
+    printf("Theta1 Angle: %.2f degrees\n\r", state.theta1); // Assuming angles are in radians and you want to print in degrees
+    printf("Theta2 Angle: %.2f degrees\n\r", state.theta2); // Convert to degrees if necessary
+    printf("X Position: %.2f\n\r", state.x);
+    printf("Y Position: %.2f\n\r", state.y);
+    // printf("Limit Switch 1 Triggered: %s\n\r", state.limitTrigger1 ? "Yes" : "No");
+    // printf("Limit Switch 2 Triggered: %s\n\r", state.limitTrigger2 ? "Yes" : "No");
+    // printf("Limit Switch Z Triggered: %s\n\r", state.limitTriggerz ? "Yes" : "No");
 }
 
 /**

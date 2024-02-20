@@ -25,17 +25,24 @@ int main(void)
   SystemClockConfig();
   Serial_Init();
   Motors_Init();
+  Limit_Switch_Init();
+  GPIO_Init(); // Initialize GPIO for LED
 
   // HOME THE ROBOT
   InitializeStateMachine(); // I would maybe even put this function call in the homing function
 
-  // Limit switch setup
-  GPIO_Init(); // Initialize GPIO for LED
-  Limit_Switch_Init();
+  // Testing
+  double realdelta1;
+  double realdelta2;
+  double realdeltaz;
 
   while (1)
   {
-    SerialDemo(); // This will halt execution
+    // printf("starting move\n\r");
+    MoveByAngle(100, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+    // printf("finishing move\n\r");
+
+    // SerialDemo(); // This will halt execution
 
     // StepperSetRpm(motor_x.rpm);
 
