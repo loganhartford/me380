@@ -29,11 +29,13 @@ typedef struct
     bool moveDone;         // Flag to indicate if the move is done
     double radsPerStep;    // Radians per step of the motor
     int reduction;         // Gear reduction of the motor
+    double thetaMax;       // Positive limit switch
+    double thetaMin;       // Negative limit swithc
 } Motor;
 
-extern Motor motor_x;
-extern Motor motor_y;
-extern Motor motor_z;
+extern Motor motor1;
+extern Motor motor2;
+extern Motor motorz;
 
 void Motors_Init(void);
 void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz);

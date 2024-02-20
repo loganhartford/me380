@@ -10,14 +10,10 @@
 #define LINK_1 85.0  // mm
 #define LINK_2 190.0 // mm
 
-#define M1_GEAR_REDUCTION 2
-#define M2_GEAR_REDUCTION 2
-#define RESOLUTION (RADS_PER_STEP / M1_GEAR_REDUCTION)
-
-#define THETA1_MIN (-160.0 / 180.0 * M_PI)
-#define THETA1_MAX (160.0 / 180.0 * M_PI)
-#define THETA2_MIN (-100.0 / 180.0 * M_PI)
-#define THETA2_MAX (100.0 / 180.0 * M_PI)
+// #define THETA1_MIN (-160.0 / 180.0 * M_PI)
+// #define THETA1_MAX (160.0 / 180.0 * M_PI)
+// #define THETA2_MIN (-100.0 / 180.0 * M_PI)
+// #define THETA2_MAX (100.0 / 180.0 * M_PI)
 
 /**
  * @brief Robot state machine

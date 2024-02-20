@@ -6,8 +6,8 @@
 
 void CalculateJointAngle(double x, double y, double solns[2][2]);
 void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
-double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link1);
-double CalculateMotorDelta(double delta);
+double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor);
+double CalculateMotorDelta(double delta, Motor *motor);
 bool IsValid(double *soln);
 
 void dummy(void)
@@ -21,12 +21,12 @@ void dummy(void)
  */
 void InitializeStateMachine(void)
 {
-    state.homed = 1;                                                      // Homed yet
-    state.inmotion = 0;                                                   // Not in motion
-    state.grasping = 0;                                                   // Not grasping
-    state.theta1 = THETA1_MAX;                                            // Link 1 in homed position
-    state.theta2 = THETA2_MAX;                                            // Link 2 in home position
-    CalculateCartesianCoords(THETA1_MAX, THETA2_MAX, &state.x, &state.y); // Determine homed x, an y position
+    state.homed = 1;                                                          // Homed yet
+    state.inmotion = 0;                                                       // Not in motion
+    state.grasping = 0;                                                       // Not grasping
+    state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
+    state.theta2 = motor2.thetaMax;                                           // Link 2 in home position
+    CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
 }
 
 /**
@@ -174,17 +174,11 @@ void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y
  *
  * @param cur_theta current angle.
  * @param targ_theta desired angle.
+ * @param *motor motor object
  * @return double - the smallest delta to get from the current to the desired angle.
  */
-double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link1)
+double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor)
 {
-    double THETA_MAX = THETA2_MAX;
-    double THETA_MIN = THETA2_MIN;
-    if (link1)
-    {
-        THETA_MAX = THETA1_MAX;
-        THETA_MIN = THETA1_MIN;
-    }
 
     double delta = targ_theta - cur_theta;
     // Normalize the delta
@@ -197,11 +191,11 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link
         delta = delta + 2 * M_PI;
     }
     // Prevent the robot from moving through the restricted angle
-    if ((cur_theta + delta) > THETA_MAX)
+    if ((cur_theta + delta) > motor->thetaMax)
     {
         return delta - 2 * M_PI;
     }
-    else if ((cur_theta + delta) < THETA_MIN)
+    else if ((cur_theta + delta) < motor->thetaMin)
     {
         return delta + 2 * M_PI;
     }
@@ -216,18 +210,18 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, bool link
  */
 double CalculateMotorDelta(double delta, Motor *motor)
 {
-
-    return round(delta / RESOLUTION) * RESOLUTION;
+    double resolution = (motor->radsPerStep / motor->reduction);
+    return round(delta / resolution) * resolution;
 }
 
 bool IsValid(double *soln)
 {
     // Check if normalized angles are within the specified range in radians
-    if ((soln[0] < THETA1_MIN) || (soln[0] > THETA1_MAX))
+    if ((soln[0] < motor1.thetaMin) || (soln[0] > motor1.thetaMax))
     {
         return false;
     }
-    else if ((soln[1] < THETA2_MIN) || (soln[1] > THETA2_MAX))
+    else if ((soln[1] < motor2.thetaMin) || (soln[1] > motor2.thetaMax))
     {
         return false;
     }
@@ -288,11 +282,11 @@ void MoveTo(double x, double y)
         return;
     }
 
-    double delta1 = CalculateQuickestValidPath(state.theta1, best[0], true);
-    double delta2 = CalculateQuickestValidPath(state.theta2, best[1], false);
+    double delta1 = CalculateQuickestValidPath(state.theta1, best[0], &motor1);
+    double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
-    double mdelta1 = CalculateMotorDelta(delta1);
-    double mdelta2 = CalculateMotorDelta(delta2);
+    double mdelta1 = CalculateMotorDelta(delta1, &motor1);
+    double mdelta2 = CalculateMotorDelta(delta2, &motor2);
 
     // Move the motors
 

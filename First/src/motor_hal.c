@@ -21,9 +21,12 @@ Motor motor1 = {
     .moveDone = false,
     .radsPerStep = 2 * M_PI / STEPS_PER_REV,
     .reduction = 1,
+    .thetaMin = -160.0 / 180.0 * M_PI,
+    .thetaMax = 160.0 / 180.0 * M_PI,
 };
 
-Motor motor2 = {                 // Y
+Motor motor2 = {
+    // Y
     .stepPort = GPIOB,           // D3-PB3
     .stepPin = GPIO_PIN_3,       // D3-PB3
     .dirPort = GPIOB,            // D6-PB10
@@ -34,7 +37,10 @@ Motor motor2 = {                 // Y
     .direction = CCW,
     .moveDone = false,
     .radsPerStep = 2 * M_PI / STEPS_PER_REV,
-    .reduction = 2};
+    .reduction = 2,
+    .thetaMin = -100.0 / 180.0 * M_PI,
+    .thetaMax = 100.0 / 180.0 * M_PI,
+};
 
 Motor motorz = {                // Z
     .stepPort = GPIOB,          // D4-PB5

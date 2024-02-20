@@ -15,6 +15,66 @@ double ReceiveFloat(void);
 void RecieveCoordinates(double *x, double *y);
 void SerialDemo(void);
 
+// Limit switches
+void GPIO_Init(void)
+{
+  __HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  // LED pin configuration
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+}
+
+void EXTI_Init(void)
+{
+  __HAL_RCC_GPIOB_CLK_ENABLE(); // Enable GPIOB clock
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  // External interrupt pin configuration
+  GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_5 | GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; // Trigger on rising edge
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  // Enable and set EXTI line Interrupt to the given priority
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == GPIO_PIN_1 || GPIO_Pin == GPIO_PIN_5 || GPIO_Pin == GPIO_PIN_10)
+  {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
+  }
+}
+
+// Define ISRs for the pins
+void EXTI1_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+}
+
+void EXTI9_5_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
+}
+
 int main(void)
 {
   HAL_Init();
@@ -25,9 +85,14 @@ int main(void)
   // HOME THE ROBOT
   InitializeStateMachine(); // I would maybe even put this function call in the homing function
 
+  // Limit switch setup
+  GPIO_Init(); // Initialize GPIO for LED
+  EXTI_Init();
+
   while (1)
   {
     SerialDemo(); // This will halt execution
+    
 
     // StepperSetRpm(motor_x.rpm);
 
