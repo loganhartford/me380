@@ -27,6 +27,9 @@ void InitializeStateMachine(void)
     state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
     state.theta2 = motor2.thetaMax;                                           // Link 2 in home position
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
+    // state.limitTrigger1 = ;
+    // state.limitTrigger2;
+    // state.limitTriggerz;
 }
 
 /**

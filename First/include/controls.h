@@ -28,6 +28,9 @@ struct stateMachine
     double theta2; // Link 2 angle
     double x;      // X position of end effector
     double y;      // Y position of end effector
+    bool limitTrigger1;
+    bool limitTrigger2;
+    bool limitTriggerz;
 };
 
 extern struct stateMachine state;
