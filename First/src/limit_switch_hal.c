@@ -9,8 +9,8 @@ LimitSwitch limitSwitches =
     {
         .port = GPIOB,
         .theta1Pin = GPIO_PIN_1,
-        .theta2Pin = GPIO_PIN_5,
-        .thetazPin = GPIO_PIN_10,
+        .theta2Pin = GPIO_PIN_7,
+        .thetazPin = GPIO_PIN_13,
 };
 
 void Limit_Switch_Init(void)
@@ -41,8 +41,10 @@ void EXTI1_IRQHandler(void)
 
     motor1.limitTriggered = 1;
 
+    printf("1\n\r")
+
     // For testing only, delete later
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
 
 }
 
@@ -51,17 +53,21 @@ void EXTI9_5_IRQHandler(void)
     HAL_GPIO_EXTI_IRQHandler(limitSwitches.theta2Pin);
 
     motor2.limitTriggered = 1;
+    printf("9-5\n\r")
 
     // For testing only, delete later
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
 }
 
 void EXTI15_10_IRQHandler(void)
 {
     HAL_GPIO_EXTI_IRQHandler(limitSwitches.thetazPin);
 
-    motorz.limitTriggered = 1;
+    // motorz.limitTriggered = 1;
+    motor2.limitTriggered = 0; // for testing only!
+    motor1.limitTriggered = 0; // for testing only!
+    printf("15-10\n\r")
 
     // For testing only, delete later
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
 }

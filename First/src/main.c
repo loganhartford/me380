@@ -35,11 +35,13 @@ int main(void)
   double realdelta1;
   double realdelta2;
   double realdeltaz;
+  motor2.limitTriggered = 1;
+  motor1.limitTriggered = 1;
 
   while (1)
   {
     // printf("starting move\n\r");
-    MoveByAngle(100, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+    MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
     // printf("finishing move\n\r");
 
     // SerialDemo(); // This will halt execution
