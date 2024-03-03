@@ -1,6 +1,6 @@
 #include "limit_switch_hal.h"
 #include "motor_hal.h"
-
+#include "main.h"
 void EXTI1_IRQHandler(void);
 void EXTI9_5_IRQHandler(void);
 void EXTI15_10_IRQHandler(void);
@@ -41,22 +41,23 @@ void EXTI1_IRQHandler(void)
 
     motor1.limitTriggered = 1;
 
-    printf("1\n\r")
+    printf("1: %u\n\r", limitSwitches.counter);
+    limitSwitches.counter++;
 
     // For testing only, delete later
-    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
-
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
 }
 
 void EXTI9_5_IRQHandler(void)
 {
     HAL_GPIO_EXTI_IRQHandler(limitSwitches.theta2Pin);
-
+    
     motor2.limitTriggered = 1;
-    printf("9-5\n\r")
+    printf("7: %u\n\r", limitSwitches.counter);
+    limitSwitches.counter++;
 
     // For testing only, delete later
-    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
 }
 
 void EXTI15_10_IRQHandler(void)
@@ -66,8 +67,9 @@ void EXTI15_10_IRQHandler(void)
     // motorz.limitTriggered = 1;
     motor2.limitTriggered = 0; // for testing only!
     motor1.limitTriggered = 0; // for testing only!
-    printf("15-10\n\r")
+    printf("13: %u\n\r", limitSwitches.counter);
+    limitSwitches.counter++;
 
     // For testing only, delete later
-    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // Toggle LED
 }

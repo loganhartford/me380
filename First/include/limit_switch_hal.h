@@ -9,6 +9,7 @@ typedef struct
     uint16_t theta1Pin; // GPIO Pin
     uint16_t theta2Pin; // GPIO Pin
     uint16_t thetazPin; // GPIO Pin
+    uint16_t counter;
 } LimitSwitch;
 
 extern LimitSwitch limitSwitches;
