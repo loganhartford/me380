@@ -42,10 +42,15 @@ int main(void)
   double realdelta1;
   double realdelta2;
   double realdeltaz;
+  MoveTheta1(18*M_PI, 60);
+  MoveTheta2(3*M_PI, 10);
 
   while (1)
   {
-    MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+    // MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+
+    // HAL_GPIO_TogglePin(motor1.stepPort, motor2.stepPin);
+    HAL_Delay(1);
 
     // SerialDemo(); // This will halt execution
   }
