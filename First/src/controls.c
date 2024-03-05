@@ -21,15 +21,12 @@ void dummy(void)
  */
 void InitializeStateMachine(void)
 {
-    state.homed = 1;                                                          // Homed yet
+    state.homed = 0;                                                          // Homed yet
     state.inmotion = 0;                                                       // Not in motion
     state.grasping = 0;                                                       // Not grasping
     state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
     state.theta2 = motor2.thetaMax;                                           // Link 2 in home position                                           // Link 2 in home position
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
-    // state.limitTrigger1 = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta1Pin);
-    // state.limitTrigger2 = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta2Pin);
-    // state.limitTriggerz = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.thetazPin);
 }
 
 /**

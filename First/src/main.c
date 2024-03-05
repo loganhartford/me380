@@ -16,6 +16,7 @@ double ReceiveFloat(void);
 void RecieveCoordinates(double *x, double *y);
 void SerialDemo(void);
 void GPIO_Init(void);
+void SystemHealthCheck(void);
 
 // Limit switches
 
@@ -23,6 +24,9 @@ int main(void)
 {
   HAL_Init();
   SystemClockConfig();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   Serial_Init();
   Motors_Init();
   Limit_Switch_Init();
@@ -31,43 +35,19 @@ int main(void)
   // HOME THE ROBOT
   InitializeStateMachine(); // I would maybe even put this function call in the homing function
 
+  //
+  SystemHealthCheck();
+
   // Testing
   double realdelta1;
   double realdelta2;
   double realdeltaz;
 
-  // Need to check that none are triggered already first
-
-  // Clear switches
-  motor2.limitTriggered = 0;
-  motor1.limitTriggered = 0;
-  // Move positive until limit switch is hit
-  MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
-  HAL_Delay(1000);
-  // Reset limit switches
-  motor2.limitTriggered = 0;
-  motor1.limitTriggered = 0;
-
   while (1)
   {
-    // printf("starting move\n\r");
-    // MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
-    // printf("finishing move\n\r");
+    MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
 
-    SerialDemo(); // This will halt execution
-
-    // StepperSetRpm(motor_x.rpm);
-
-    // 1. Robot is sitting idle
-
-    // - Listen for button inputs
-    // - Listen for joystick inputs
-
-    // 2. Robot is moving to some locations
-
-    // - Executing motion
-    // - Interrupt can cancel motion
-    // - Motion is a blocking function for right now
+    // SerialDemo(); // This will halt execution
   }
 }
 
@@ -142,15 +122,14 @@ void SystemClockConfig(void)
 }
 
 /**
- * @brief Will hold the device in an infinte look on error.
+ * @brief Will hold the device in an infinte loop on error.
  *
  */
 void ErrorHandler(void)
 {
-  /* Turn LED2 on */
-  BSP_LED_On(LED2);
   while (1)
   {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
   }
 }
 
@@ -263,4 +242,44 @@ void GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 0); // Off by default
+}
+
+/**
+ * @brief Put all system health checks here
+ *
+ */
+void SystemHealthCheck(void)
+{
+  // Check that all limit switches are closed (NC switched).
+  if (theta1SW.Pin_p_state)
+  {
+    printf("Error: check theta1+ sw\n\r");
+  }
+  else if (theta1SW.Pin_n_state)
+  {
+    printf("Error: check theta1- sw\n\r");
+  }
+  else if (theta2SW.Pin_p_state)
+  {
+    printf("Error: check theta2+ sw\n\r");
+  }
+  else if (theta2SW.Pin_n_state)
+  {
+    printf("Error: check theta2- sw\n\r");
+  }
+  else if (thetazSW.Pin_p_state)
+  {
+    printf("Error: check thetaz+ sw\n\r");
+  }
+  else if (thetazSW.Pin_n_state)
+  {
+    printf("Error: check thetaz- sw\n\r");
+  }
+  else
+  {
+    return;
+  }
+  ErrorHandler();
 }

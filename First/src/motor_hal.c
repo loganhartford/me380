@@ -85,9 +85,9 @@ void TIM2_Init(void)
  */
 void UpdateMotorLimitTriggers(void)
 {
-    motor1.limitTriggered = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta1Pin);
-    motor2.limitTriggered = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta2Pin);
-    motorz.limitTriggered = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.thetazPin);
+    // motor1.limitTriggered = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta1Pin);
+    // motor2.limitTriggered = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta2Pin);
+    // motorz.limitTriggered = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.thetazPin);
 }
 
 /**
@@ -98,18 +98,6 @@ void UpdateMotorLimitTriggers(void)
 void Motor_Init(Motor motor)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-
-    // // Enable GPIO Clocks
-    // if (motor.stepPort == GPIOA)
-    // {
-    //     __HAL_RCC_GPIOA_CLK_ENABLE();
-    // }
-    // else if (motor.stepPort == GPIOB)
-    // {
-    //     __HAL_RCC_GPIOB_CLK_ENABLE();
-    // } // Add more conditions if using other GPIO ports
 
     // Initialize Step Pin
     GPIO_InitStruct.Pin = motor.stepPin;
@@ -228,8 +216,9 @@ void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1
     *realthetaz = thetaz;
 }
 
-void HomeMotors(void) {
-//    MoveByAngle(1, 1, 0.0, &realdelta1, &realdelta2, &realdeltaz); 
+void HomeMotors(void)
+{
+    //    MoveByAngle(1, 1, 0.0, &realdelta1, &realdelta2, &realdeltaz);
 }
 
 /**

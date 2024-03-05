@@ -5,14 +5,17 @@
 
 typedef struct
 {
-    GPIO_TypeDef *port; // GPIO Port
-    uint16_t theta1Pin; // GPIO Pin
-    uint16_t theta2Pin; // GPIO Pin
-    uint16_t thetazPin; // GPIO Pin
-    uint16_t counter;
+    const char *name;
+    GPIO_TypeDef *port;
+    uint16_t Pin_p;
+    GPIO_PinState Pin_p_state;
+    uint16_t Pin_n;
+    GPIO_PinState Pin_n_state;
 } LimitSwitch;
 
-extern LimitSwitch limitSwitches;
+extern LimitSwitch theta1SW;
+extern LimitSwitch theta2SW;
+extern LimitSwitch thetazSW;
 
 void Limit_Switch_Init(void);
 
