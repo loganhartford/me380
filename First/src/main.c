@@ -32,24 +32,16 @@ int main(void)
   Limit_Switch_Init();
   GPIO_Init(); // Initialize GPIO for LED
 
-  // HOME THE ROBOT
-  InitializeStateMachine(); // I would maybe even put this function call in the homing function
+  InitializeStateMachine();
 
-  //
   SystemHealthCheck();
 
-  // Testing
-  double realdelta1;
-  double realdelta2;
-  double realdeltaz;
-  MoveTheta1(18*M_PI, 60);
-  MoveTheta2(3*M_PI, 10);
+  // HOME THE ROBOT
+
+  HomeMotors();
 
   while (1)
   {
-    // MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
-
-    // HAL_GPIO_TogglePin(motor1.stepPort, motor2.stepPin);
     HAL_Delay(1);
 
     // SerialDemo(); // This will halt execution
@@ -237,8 +229,6 @@ void SerialDemo(void)
  */
 void GPIO_Init(void)
 {
-  __HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock
-
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   // LED pin configuration
@@ -249,6 +239,15 @@ void GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 0); // Off by default
+
+  GPIO_InitTypeDef GPIO_InitStruct2 = {0};
+
+  // LED pin configuration
+  GPIO_InitStruct2.Pin = GPIO_PIN_8;
+  GPIO_InitStruct2.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
+  GPIO_InitStruct2.Pull = GPIO_NOPULL;
+  GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
 }
 
 /**
