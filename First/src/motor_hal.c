@@ -18,7 +18,7 @@ Motor motor1 = {
     .directionPin = GPIO_PIN_4, // D5-PB4
     .currentAngle = 0.0,
     .targetAngle = 0.0,
-    .rpm = 100.0,
+    .rpm = 50.0,
     .direction = CCW,
     .moveDone = false,
     .radsPerStep = 2 * M_PI / STEPS_PER_REV,
@@ -98,16 +98,18 @@ void UpdateMotorLimitTriggers(void)
 void Motor_Init(Motor motor)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    // Enable GPIO Clocks
-    if (motor.stepPort == GPIOA)
-    {
-        __HAL_RCC_GPIOA_CLK_ENABLE();
-    }
-    else if (motor.stepPort == GPIOB)
-    {
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-    } // Add more conditions if using other GPIO ports
+    // // Enable GPIO Clocks
+    // if (motor.stepPort == GPIOA)
+    // {
+    //     __HAL_RCC_GPIOA_CLK_ENABLE();
+    // }
+    // else if (motor.stepPort == GPIOB)
+    // {
+    //     __HAL_RCC_GPIOB_CLK_ENABLE();
+    // } // Add more conditions if using other GPIO ports
 
     // Initialize Step Pin
     GPIO_InitStruct.Pin = motor.stepPin;
@@ -142,7 +144,7 @@ void Motors_Init(void)
  */
 void StepMotor(Motor *motor)
 {
-    if ((fabs(motor->targetAngle - motor->currentAngle) <= motor->radsPerStep) || motor->limitTriggered)
+    if ((fabs(fabs(motor->targetAngle) - fabs(motor->currentAngle)) <= motor->radsPerStep) || motor->limitTriggered)
     {
         motor->moveDone = true;
     }
@@ -188,15 +190,15 @@ void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1
     motor2.direction = CCW;
     motorz.direction = CCW;
 
-    if (motor1.targetAngle - motor1.currentAngle > 0) // now every motor knows its direction
+    if (motor1.targetAngle < 0) // now every motor knows its direction
     {
         motor1.direction = CW;
     }
-    if (motor2.targetAngle - motor2.currentAngle > 0)
+    if (motor2.targetAngle < 0)
     {
         motor2.direction = CW;
     }
-    if (motorz.targetAngle - motorz.currentAngle > 0)
+    if (motorz.targetAngle < 0)
     {
         motorz.direction = CW;
     }
@@ -224,6 +226,10 @@ void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1
     *realtheta1 = theta1;
     *realtheta2 = theta2;
     *realthetaz = thetaz;
+}
+
+void HomeMotors(void) {
+//    MoveByAngle(1, 1, 0.0, &realdelta1, &realdelta2, &realdeltaz); 
 }
 
 /**

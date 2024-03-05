@@ -21,8 +21,8 @@ void Limit_Switch_Init(void)
 
     // External interrupt pin configuration
     GPIO_InitStruct.Pin = limitSwitches.theta1Pin | limitSwitches.theta2Pin | limitSwitches.thetazPin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; // Trigger on rising edge
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; // Trigger on falling edge edge
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     HAL_GPIO_Init(limitSwitches.port, &GPIO_InitStruct);
 
     // Enable and set EXTI line Interrupt to the given priority
@@ -53,6 +53,7 @@ void EXTI9_5_IRQHandler(void)
     HAL_GPIO_EXTI_IRQHandler(limitSwitches.theta2Pin);
     
     motor2.limitTriggered = 1;
+
     printf("7: %u\n\r", limitSwitches.counter);
     limitSwitches.counter++;
 

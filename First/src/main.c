@@ -35,16 +35,26 @@ int main(void)
   double realdelta1;
   double realdelta2;
   double realdeltaz;
-  motor2.limitTriggered = 1;
-  motor1.limitTriggered = 1;
+
+  // Need to check that none are triggered already first
+
+  // Clear switches
+  motor2.limitTriggered = 0;
+  motor1.limitTriggered = 0;
+  // Move positive until limit switch is hit
+  MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+  HAL_Delay(1000);
+  // Reset limit switches
+  motor2.limitTriggered = 0;
+  motor1.limitTriggered = 0;
 
   while (1)
   {
     // printf("starting move\n\r");
-    MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+    // MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
     // printf("finishing move\n\r");
 
-    // SerialDemo(); // This will halt execution
+    SerialDemo(); // This will halt execution
 
     // StepperSetRpm(motor_x.rpm);
 

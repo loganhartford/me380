@@ -25,7 +25,7 @@ void InitializeStateMachine(void)
     state.inmotion = 0;                                                       // Not in motion
     state.grasping = 0;                                                       // Not grasping
     state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
-    state.theta2 = motor2.thetaMax;                                           // Link 2 in home position
+    state.theta2 = motor2.thetaMax;                                           // Link 2 in home position                                           // Link 2 in home position
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
     // state.limitTrigger1 = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta1Pin);
     // state.limitTrigger2 = HAL_GPIO_ReadPin(limitSwitches.port, limitSwitches.theta2Pin);
@@ -114,8 +114,10 @@ void PrintState()
     printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
     printf("Theta1 Angle: %.2f degrees\n\r", state.theta1); // Assuming angles are in radians and you want to print in degrees
     printf("Theta2 Angle: %.2f degrees\n\r", state.theta2); // Convert to degrees if necessary
+    PrintAnglesInDegrees(state.theta1, state.theta2);
     printf("X Position: %.2f\n\r", state.x);
     printf("Y Position: %.2f\n\r", state.y);
+    PrintCaresianCoords(state.x, state.y);
     // printf("Limit Switch 1 Triggered: %s\n\r", state.limitTrigger1 ? "Yes" : "No");
     // printf("Limit Switch 2 Triggered: %s\n\r", state.limitTrigger2 ? "Yes" : "No");
     // printf("Limit Switch Z Triggered: %s\n\r", state.limitTriggerz ? "Yes" : "No");
