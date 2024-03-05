@@ -1,6 +1,7 @@
 #include "main.h"
 #include "controls.h"
 #include "motor_hal.h"
+#include "limit_switch_hal.h"
 
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
@@ -10,37 +11,43 @@ UART_HandleTypeDef UartHandle;
 struct stateMachine state = {0};
 
 static void SystemClockConfig(void);
-void SerialInit(void);
+void Serial_Init(void);
 double ReceiveFloat(void);
 void RecieveCoordinates(double *x, double *y);
 void SerialDemo(void);
+void GPIO_Init(void);
+void SystemHealthCheck(void);
+
+// Limit switches
 
 int main(void)
 {
   HAL_Init();
   SystemClockConfig();
-  SerialInit();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  Serial_Init();
   Motors_Init();
+  Limit_Switch_Init();
+  GPIO_Init(); // Initialize GPIO for LED
 
   // HOME THE ROBOT
   InitializeStateMachine(); // I would maybe even put this function call in the homing function
 
+  //
+  SystemHealthCheck();
+
+  // Testing
+  double realdelta1;
+  double realdelta2;
+  double realdeltaz;
+
   while (1)
   {
-    SerialDemo(); // This will halt execution
+    MoveByAngle(200, 100, 0.0, &realdelta1, &realdelta2, &realdeltaz);
 
-    // StepperSetRpm(motor_x.rpm);
-
-    // 1. Robot is sitting idle
-
-    // - Listen for button inputs
-    // - Listen for joystick inputs
-
-    // 2. Robot is moving to some locations
-
-    // - Executing motion
-    // - Interrupt can cancel motion
-    // - Motion is a blocking function for right now
+    // SerialDemo(); // This will halt execution
   }
 }
 
@@ -115,15 +122,14 @@ void SystemClockConfig(void)
 }
 
 /**
- * @brief Will hold the device in an infinte look on error.
+ * @brief Will hold the device in an infinte loop on error.
  *
  */
 void ErrorHandler(void)
 {
-  /* Turn LED2 on */
-  BSP_LED_On(LED2);
   while (1)
   {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
   }
 }
 
@@ -131,7 +137,7 @@ void ErrorHandler(void)
  * @brief Initializes UART for printing to the serial monitor.
  *
  */
-void SerialInit(void)
+void Serial_Init(void)
 {
   UartHandle.Instance = USARTx;
   UartHandle.Init.BaudRate = 9600;
@@ -218,4 +224,62 @@ void SerialDemo(void)
   MoveTo(x, y);
   printf("Done.\n\r");
   printf("\n\r");
+}
+
+/**
+ * @brief Initialize general purpose IOs
+ *
+ */
+void GPIO_Init(void)
+{
+  __HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  // LED pin configuration
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 0); // Off by default
+}
+
+/**
+ * @brief Put all system health checks here
+ *
+ */
+void SystemHealthCheck(void)
+{
+  // Check that all limit switches are closed (NC switched).
+  if (theta1SW.Pin_p_state)
+  {
+    printf("Error: check theta1+ sw\n\r");
+  }
+  else if (theta1SW.Pin_n_state)
+  {
+    printf("Error: check theta1- sw\n\r");
+  }
+  else if (theta2SW.Pin_p_state)
+  {
+    printf("Error: check theta2+ sw\n\r");
+  }
+  else if (theta2SW.Pin_n_state)
+  {
+    printf("Error: check theta2- sw\n\r");
+  }
+  else if (thetazSW.Pin_p_state)
+  {
+    printf("Error: check thetaz+ sw\n\r");
+  }
+  else if (thetazSW.Pin_n_state)
+  {
+    printf("Error: check thetaz- sw\n\r");
+  }
+  else
+  {
+    return;
+  }
+  ErrorHandler();
 }
