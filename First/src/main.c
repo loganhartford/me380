@@ -37,9 +37,11 @@ int main(void)
   SystemHealthCheck();
 
   // Wait for the home button to be pushed
+  printf("Waiting to home...\n\r");
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
   while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
   {
+    HAL_Delay(1);
   }
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
 
@@ -48,9 +50,7 @@ int main(void)
 
   while (1)
   {
-    HAL_Delay(1);
-
-    // SerialDemo(); // This will halt execution
+    SerialDemo(); // This will halt execution
   }
 }
 
@@ -225,7 +225,6 @@ void SerialDemo(void)
   printf("Moving to: ");
   PrintCaresianCoords(x, y);
   MoveTo(x, y);
-  printf("Done.\n\r");
   printf("\n\r");
 }
 

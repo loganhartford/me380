@@ -85,6 +85,7 @@ void EXTI9_5_IRQHandler(void)
         if (theta1Pin_p_state)
         {
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
+            motor1.isMoving = 0;
             printf("Theta1+ Engaged\n\r");
         }
         // Switch is closed and limit switch is not engaged
@@ -102,6 +103,7 @@ void EXTI9_5_IRQHandler(void)
         if (theta1Pin_n_state)
         {
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
+            motor1.isMoving = 0;
             printf("Theta1- Engaged\n\r");
         }
         // Switch is closed and limit switch is not engaged
@@ -120,6 +122,7 @@ void EXTI9_5_IRQHandler(void)
         if (theta2Pin_p_state)
         {
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
+            motor2.isMoving = 0;
             printf("Theta2+ Engaged\n\r");
         }
         // Switch is closed and limit switch is not engaged
@@ -137,6 +140,7 @@ void EXTI9_5_IRQHandler(void)
         if (theta2Pin_n_state)
         {
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
+            motor2.isMoving = 0;
             printf("Theta2- Engaged\n\r");
         }
         // Switch is closed and limit switch is not engaged
@@ -165,6 +169,7 @@ void EXTI15_10_IRQHandler(void)
         if (thetazPin_p_state)
         {
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
+            motorz.isMoving = 0;
             printf("Thetaz+ Engaged\n\r");
         }
         // Switch is closed and limit switch is not engaged
@@ -182,6 +187,7 @@ void EXTI15_10_IRQHandler(void)
         if (thetazPin_n_state)
         {
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
+            motorz.isMoving = 0;
             printf("Thetaz- Engaged\n\r");
         }
         // Switch is closed and limit switch is not engaged
@@ -193,7 +199,4 @@ void EXTI15_10_IRQHandler(void)
         thetazSW.Pin_n_state = thetazPin_n_state;
         HAL_GPIO_EXTI_IRQHandler(thetazSW.Pin_n);
     }
-
-    
-    
 }
