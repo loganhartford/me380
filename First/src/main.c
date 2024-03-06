@@ -36,8 +36,14 @@ int main(void)
 
   SystemHealthCheck();
 
-  // HOME THE ROBOT
+  // Wait for the home button to be pushed
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
+  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
+  {
+  }
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
 
+  // Home the robot
   HomeMotors();
 
   while (1)
@@ -248,6 +254,15 @@ void GPIO_Init(void)
   GPIO_InitStruct2.Pull = GPIO_NOPULL;
   GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
+
+  GPIO_InitTypeDef GPIO_InitStruct3 = {0};
+
+  // Homing button
+  GPIO_InitStruct3.Pin = GPIO_PIN_9;
+  GPIO_InitStruct3.Mode = GPIO_MODE_INPUT; // Push Pull Mode
+  GPIO_InitStruct3.Pull = GPIO_NOPULL;
+  GPIO_InitStruct3.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct3);
 }
 
 /**

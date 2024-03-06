@@ -200,6 +200,7 @@ void HomeMotors(void)
     MoveTheta2(2 * M_PI, 5);
     while (!theta1SW.Pin_p_state || !theta2SW.Pin_p_state)
     {
+        // Hypothetically we shouldn't have to pole in the loop here but something is wierd, should ivestigate further later.
         theta1SW.Pin_p_state = HAL_GPIO_ReadPin(theta1SW.port, theta1SW.Pin_p);
         theta2SW.Pin_p_state = HAL_GPIO_ReadPin(theta2SW.port, theta2SW.Pin_p);
     }
@@ -208,6 +209,7 @@ void HomeMotors(void)
     MoveTheta2(-2 * M_PI, 1);
     while (theta1SW.Pin_p_state || theta2SW.Pin_p_state)
     {
+        // Hypothetically we shouldn't have to pole in the loop here but something is wierd, should ivestigate further later.
         theta1SW.Pin_p_state = HAL_GPIO_ReadPin(theta1SW.port, theta1SW.Pin_p);
         theta2SW.Pin_p_state = HAL_GPIO_ReadPin(theta2SW.port, theta2SW.Pin_p);
     }
