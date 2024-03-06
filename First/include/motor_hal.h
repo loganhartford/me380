@@ -21,17 +21,14 @@ typedef struct
     GPIO_TypeDef *stepPort; // Port of the motor
     uint16_t stepPin;       // Pin for stepping
     GPIO_TypeDef *dirPort;
-    uint16_t directionPin; // Pin to set direction
-    double currentAngle;   // Current angle of the motor
-    double targetAngle;    // Target angle for the motor to move to
-    double rpm;            // Rotation speed in RPM
-    int direction;         // Direction of movement
-    bool moveDone;         // Flag to indicate if the move is done
-    double radsPerStep;    // Radians per step of the motor
-    int reduction;         // Gear reduction of the motor
-    double thetaMax;       // Positive limit switch position
-    double thetaMin;       // Negative limit switch position
-    bool limitTriggered;   // Has/is a limit switch triggered?
+    uint16_t dirPin; // Pin to set direction
+    bool dir;
+    double radsPerStep;  // Radians per step of the motor
+    int reduction;       // Gear reduction of the motor
+    double thetaMax;     // Positive limit switch position
+    double thetaMin;     // Negative limit switch position
+    bool limitTriggered; // Has/is a limit switch triggered?
+    uint32_t stepsToComplete;
 
 } Motor;
 
@@ -40,7 +37,9 @@ extern Motor motor2;
 extern Motor motorz;
 
 void Motors_Init(void);
-void MoveByAngle(double theta1, double theta2, double thetaz, double *realtheta1, double *realtheta2, double *realthetaz);
-void PrintMotorInfo(const Motor *motor);
+void MoveTheta1(double angle, double speedRPM);
+void MoveTheta2(double angle, double speedRPM);
+void HomeMotors(void);
+void StopMotors(void);
 
 #endif
