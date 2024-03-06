@@ -37,6 +37,7 @@ int main(void)
   SystemHealthCheck();
 
   // Wait for the home button to be pushed
+  printf("Waiting to home...\n\r");
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
   while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
   {
@@ -46,11 +47,10 @@ int main(void)
   // Home the robot
   HomeMotors();
 
+  printf("Homed.\n\r");
   while (1)
   {
-    HAL_Delay(1);
-
-    // SerialDemo(); // This will halt execution
+    SerialDemo(); // This will halt execution
   }
 }
 

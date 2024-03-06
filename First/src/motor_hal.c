@@ -1,10 +1,12 @@
 #include "motor_hal.h"
+#include "controls.h"
 #include "limit_switch_hal.h"
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
 void Motor_Init(Motor motor);
+void StepMotor(Motor *motor);
 static void TIM3_Init(void);
 static void TIM4_Init(void);
 void TIM3_IRQHandler(void);
@@ -13,6 +15,7 @@ void TIM4_IRQHandler(void);
 // Motor Objects
 Motor motor1 = {
     // X
+    .name = "motor1",
     .stepPort = GPIOA,      // D2-PA10
     .stepPin = GPIO_PIN_10, // D2-PA10
     .dirPort = GPIOB,       // D5-PB4
@@ -21,10 +24,12 @@ Motor motor1 = {
     .reduction = 1,
     .thetaMin = -160.0 / 180.0 * M_PI,
     .thetaMax = 160.0 / 180.0 * M_PI,
+    .isMoving = 0,
 };
 
 Motor motor2 = {
     // Y
+    .name = "motor2",
     .stepPort = GPIOB,     // D3-PB3
     .stepPin = GPIO_PIN_3, // D3-PB3
     .dirPort = GPIOB,      // D6-PB10
@@ -33,16 +38,21 @@ Motor motor2 = {
     .reduction = 2,
     .thetaMin = -100.0 / 180.0 * M_PI,
     .thetaMax = 100.0 / 180.0 * M_PI,
+    .isMoving = 0,
 };
 
-Motor motorz = {           // Z
+Motor motorz = {
+    .name = "motorz",
     .stepPort = GPIOB,     // D4-PB5
     .stepPin = GPIO_PIN_5, // D4-PB5
     .dirPort = GPIOA,      // D7-PA8
     .dirPin = GPIO_PIN_8,  // D7-PA8
     .dir = CCW,
-    .radsPerStep = 2 * M_PI / Z_STEPS_PER_REV,
-    .reduction = 1};
+    .reduction = 1,
+    // .thetaMin = -100.0 / 180.0 * M_PI,
+    // .thetaMax = 100.0 / 180.0 * M_PI,
+    .isMoving = 0,
+};
 
 /**
  * @brief Takes in a motor struct and initialized the associated pins.
@@ -77,29 +87,95 @@ void Motors_Init(void)
     Motor_Init(motorz);
     TIM3_Init();
     TIM4_Init();
+
+    motor1.limitSwitch = theta1SW;
+    motor2.limitSwitch = theta2SW;
+    motorz.limitSwitch = thetazSW;
 }
 
-void MoveTheta1(double angle, double speedRPM)
+double MoveByAngle(Motor *motor, double angle, double speedRPM)
 {
     if (angle > 0)
     {
-        HAL_GPIO_WritePin(motor1.dirPort, motor1.dirPin, CCW);
-        motor1.dir = CCW;
+        HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CCW);
+        motor->dir = CCW;
     }
     else
     {
-        HAL_GPIO_WritePin(motor1.dirPort, motor1.dirPin, CW);
-        motor1.dir = CW;
+        HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CW);
+        motor->dir = CW;
         angle = angle * -1;
     }
-    motor1.stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor1.reduction);
+    motor->stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor->reduction);
 
     float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
 
-    __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
-    HAL_TIM_Base_Start_IT(&htim3);
+    motor->isMoving = 1;
+    if (motor->name == motor1.name)
+    {
+        printf("moving motor 1\n\r");
+        __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
+        HAL_TIM_Base_Start_IT(&htim3);
+    }
+    else if (motor->name == motor2.name)
+    {
+        printf("moving motor 2\n\r");
+        __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
+        HAL_TIM_Base_Start_IT(&htim4);
+    }
+
+    double angleToComplete = motor->stepsToComplete / STEPS_PER_REV / motor->reduction * 2 * M_PI;
+    if (motor->dir == CW)
+    {
+        angleToComplete = angleToComplete * -1;
+    }
+
+    return angleToComplete;
 }
+
+void StepMotor(Motor *motor)
+{
+    HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
+    motor->stepsToComplete--;
+
+    // IsMoving will be set to 0 if a limit switch is engaged
+    if (!motor->stepsToComplete || !motor->isMoving)
+    {
+        if (motor->name == motor1.name)
+        {
+            printf("Stopping motor 1");
+            HAL_TIM_Base_Stop_IT(&htim3);
+        }
+        else if (motor->name == motor2.name)
+        {
+            HAL_TIM_Base_Stop_IT(&htim4);
+        }
+        motor->isMoving = 0;
+    }
+}
+
+// void MoveTheta1(double angle, double speedRPM)
+// {
+//     if (angle > 0)
+//     {
+//         HAL_GPIO_WritePin(motor1.dirPort, motor1.dirPin, CCW);
+//         motor1.dir = CCW;
+//     }
+//     else
+//     {
+//         HAL_GPIO_WritePin(motor1.dirPort, motor1.dirPin, CW);
+//         motor1.dir = CW;
+//         angle = angle * -1;
+//     }
+//     motor1.stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor1.reduction);
+
+//     float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
+//     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
+
+//     __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
+//     HAL_TIM_Base_Start_IT(&htim3);
+// }
 
 static void TIM3_Init(void)
 {
@@ -123,36 +199,18 @@ void TIM3_IRQHandler(void)
         if (__HAL_TIM_GET_IT_SOURCE(&htim3, TIM_IT_UPDATE) != RESET)
         {
             __HAL_TIM_CLEAR_IT(&htim3, TIM_IT_UPDATE);
-            HAL_GPIO_TogglePin(motor1.stepPort, motor1.stepPin);
-            motor1.stepsToComplete--;
-            if (!motor1.stepsToComplete || (motor1.dir && theta1SW.Pin_p_state) || (!motor1.dir && theta1SW.Pin_n_state))
-            {
-                HAL_TIM_Base_Stop_IT(&htim3);
-            }
+            // HAL_GPIO_TogglePin(motor1.stepPort, motor1.stepPin);
+            // motor1.stepsToComplete--;
+            // // If the steps are complete or if the positive limit swithc is hit and moving CCW and vice versa
+            // if (!motor1.stepsToComplete || (motor1.dir && theta1SW.Pin_p_state) || (!motor1.dir && theta1SW.Pin_n_state))
+            // {
+            //     HAL_TIM_Base_Stop_IT(&htim3);
+            //     motor1.isMoving = 0;
+            // }
+            // print("\n\r");
+            StepMotor(&motor1);
         }
     }
-}
-
-void MoveTheta2(double angle, double speedRPM)
-{
-    if (angle > 0)
-    {
-        HAL_GPIO_WritePin(motor2.dirPort, motor2.dirPin, CCW);
-        motor2.dir = CCW;
-    }
-    else
-    {
-        HAL_GPIO_WritePin(motor2.dirPort, motor2.dirPin, CW);
-        motor2.dir = CW;
-        angle = angle * -1;
-    }
-    motor2.stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor2.reduction);
-
-    float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
-    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
-
-    __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
-    HAL_TIM_Base_Start_IT(&htim4);
 }
 
 static void TIM4_Init(void)
@@ -177,12 +235,15 @@ void TIM4_IRQHandler(void)
         if (__HAL_TIM_GET_IT_SOURCE(&htim4, TIM_IT_UPDATE) != RESET)
         {
             __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
-            HAL_GPIO_TogglePin(motor2.stepPort, motor2.stepPin);
-            motor2.stepsToComplete--;
-            if (!motor2.stepsToComplete || (motor2.dir && theta2SW.Pin_p_state) || (!motor2.dir && theta2SW.Pin_n_state))
-            {
-                HAL_TIM_Base_Stop_IT(&htim4);
-            }
+            // HAL_GPIO_TogglePin(motor2.stepPort, motor2.stepPin);
+            // motor2.stepsToComplete--;
+            // // If the steps are complete or if the positive limit swithc is hit and moving CCW and vice versa
+            // if (!motor2.stepsToComplete || (motor2.dir && theta2SW.Pin_p_state) || (!motor2.dir && theta2SW.Pin_n_state))
+            // {
+            //     HAL_TIM_Base_Stop_IT(&htim4);
+            //     motor2.isMoving = 0;
+            // }
+            StepMotor(&motor2);
         }
     }
 }
@@ -196,22 +257,32 @@ void StopMotors(void)
 void HomeMotors(void)
 {
     printf("Homing\n\r");
-    MoveTheta1(2 * M_PI, 5);
-    MoveTheta2(2 * M_PI, 5);
-    while (!theta1SW.Pin_p_state || !theta2SW.Pin_p_state)
+    MoveByAngle(&motor1, 2 * M_PI, 5);
+    MoveByAngle(&motor2, 2 * M_PI, 5);
+    // MoveTheta1(2 * M_PI, 5);
+    // MoveTheta2(2 * M_PI, 5);
+    
+    while (motor1.isMoving || motor2.isMoving)
     {
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, motor1.isMoving);
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, motor2.isMoving);
+        
         // Hypothetically we shouldn't have to pole in the loop here but something is wierd, should ivestigate further later.
-        theta1SW.Pin_p_state = HAL_GPIO_ReadPin(theta1SW.port, theta1SW.Pin_p);
-        theta2SW.Pin_p_state = HAL_GPIO_ReadPin(theta2SW.port, theta2SW.Pin_p);
+        // theta1SW.Pin_p_state = HAL_GPIO_ReadPin(theta1SW.port, theta1SW.Pin_p);
+        // theta2SW.Pin_p_state = HAL_GPIO_ReadPin(theta2SW.port, theta2SW.Pin_p);
     }
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
     HAL_Delay(2000);
-    MoveTheta1(-2 * M_PI, 1);
-    MoveTheta2(-2 * M_PI, 1);
+    MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
+    MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
+    // MoveTheta1(-6 / 180 * M_PI, 1);
+    // MoveTheta2(-6 / 180 * M_PI, 1);
     while (theta1SW.Pin_p_state || theta2SW.Pin_p_state)
     {
         // Hypothetically we shouldn't have to pole in the loop here but something is wierd, should ivestigate further later.
         theta1SW.Pin_p_state = HAL_GPIO_ReadPin(theta1SW.port, theta1SW.Pin_p);
         theta2SW.Pin_p_state = HAL_GPIO_ReadPin(theta2SW.port, theta2SW.Pin_p);
     }
-    StopMotors();
+    state.homed = 1;
+    // StopMotors();
 }

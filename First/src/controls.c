@@ -7,7 +7,7 @@
 void CalculateJointAngle(double x, double y, double solns[2][2]);
 void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
 double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor);
-double CalculateMotorDelta(double delta, Motor *motor);
+// double CalculateMotorDelta(double delta, Motor *motor);
 bool IsValid(double *soln);
 
 void dummy(void)
@@ -22,7 +22,7 @@ void dummy(void)
 void InitializeStateMachine(void)
 {
     state.homed = 0;                                                          // Homed yet
-    state.inmotion = 0;                                                       // Not in motion
+    // state.inmotion = 0;                                                       // Not in motion
     state.grasping = 0;                                                       // Not grasping
     state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
     state.theta2 = motor2.thetaMax;                                           // Link 2 in home position                                           // Link 2 in home position
@@ -107,7 +107,7 @@ void PrintState()
 {
     printf("Robot State:\n\r");
     printf("Homed: %s\n\r", state.homed ? "Yes" : "No");
-    printf("In Motion: %s\n\r", state.inmotion ? "Yes" : "No");
+    // printf("In Motion: %s\n\r", state.inmotion ? "Yes" : "No");
     printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
     printf("Theta1 Angle: %.2f degrees\n\r", state.theta1); // Assuming angles are in radians and you want to print in degrees
     printf("Theta2 Angle: %.2f degrees\n\r", state.theta2); // Convert to degrees if necessary
@@ -212,11 +212,11 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *mo
  * @param delta angle you want to move the motor by.
  * @return double - the motor acceptable angle.
  */
-double CalculateMotorDelta(double delta, Motor *motor)
-{
-    double resolution = (motor->radsPerStep / motor->reduction);
-    return round(delta / resolution) * resolution;
-}
+// double CalculateMotorDelta(double delta, Motor *motor)
+// {
+//     double resolution = (motor->radsPerStep / motor->reduction);
+//     return round(delta / resolution) * resolution;
+// }
 
 bool IsValid(double *soln)
 {
@@ -289,8 +289,8 @@ void MoveTo(double x, double y)
     double delta1 = CalculateQuickestValidPath(state.theta1, best[0], &motor1);
     double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
-    double mdelta1 = CalculateMotorDelta(delta1, &motor1);
-    double mdelta2 = CalculateMotorDelta(delta2, &motor2);
+    // double mdelta1 = CalculateMotorDelta(delta1, &motor1);
+    // double mdelta2 = CalculateMotorDelta(delta2, &motor2);
 
     // Move the motors
 
@@ -302,12 +302,12 @@ void MoveTo(double x, double y)
 #ifdef DEBUG
     PrintAnglesInDegrees(mdelta1, mdelta2);
 #endif
-    printf("Angle delatas: ");
-    PrintAnglesInDegrees(mdelta1, mdelta2);
+    // printf("Angle delatas: ");
+    // PrintAnglesInDegrees(mdelta1, mdelta2);
 
     // Update the state machine
-    state.theta1 += mdelta1;
-    state.theta2 += mdelta2;
+    // state.theta1 += mdelta1;
+    // state.theta2 += mdelta2;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
 }
 

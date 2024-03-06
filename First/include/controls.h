@@ -22,8 +22,8 @@
  */
 struct stateMachine
 {
-    bool homed;    // Has the robot been homed
-    bool inmotion; // Is the robot in motion
+    bool homed; // Has the robot been homed
+    // bool inmotion; // Is the robot in motion -- moving this to motors
     bool grasping; // Is the robot grasping and object
     double theta1; // Link 1 angle
     double theta2; // Link 2 angle
