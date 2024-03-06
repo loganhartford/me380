@@ -7,13 +7,7 @@
 void CalculateJointAngle(double x, double y, double solns[2][2]);
 void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
 double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor);
-// double CalculateMotorDelta(double delta, Motor *motor);
 bool IsValid(double *soln);
-
-void dummy(void)
-{
-    // MoveByAngle(M_PI, 2*M_PI, 0);
-}
 
 /**
  * @brief Initializes the robot state
@@ -21,11 +15,8 @@ void dummy(void)
  */
 void InitializeStateMachine(void)
 {
-    state.homed = 0;                                                          // Homed yet
-    // state.inmotion = 0;                                                       // Not in motion
+    state.homed = 0;                                                          // Not homed yet
     state.grasping = 0;                                                       // Not grasping
-    state.theta1 = motor1.thetaMax;                                           // Link 1 in homed position
-    state.theta2 = motor2.thetaMax;                                           // Link 2 in home position                                           // Link 2 in home position
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
 }
 
@@ -107,17 +98,11 @@ void PrintState()
 {
     printf("Robot State:\n\r");
     printf("Homed: %s\n\r", state.homed ? "Yes" : "No");
-    // printf("In Motion: %s\n\r", state.inmotion ? "Yes" : "No");
     printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
-    printf("Theta1 Angle: %.2f degrees\n\r", state.theta1); // Assuming angles are in radians and you want to print in degrees
-    printf("Theta2 Angle: %.2f degrees\n\r", state.theta2); // Convert to degrees if necessary
+    printf("Current Angles in degrees:"); 
     PrintAnglesInDegrees(state.theta1, state.theta2);
-    printf("X Position: %.2f\n\r", state.x);
-    printf("Y Position: %.2f\n\r", state.y);
+    printf("Current Coords in x-y:");
     PrintCaresianCoords(state.x, state.y);
-    // printf("Limit Switch 1 Triggered: %s\n\r", state.limitTrigger1 ? "Yes" : "No");
-    // printf("Limit Switch 2 Triggered: %s\n\r", state.limitTrigger2 ? "Yes" : "No");
-    // printf("Limit Switch Z Triggered: %s\n\r", state.limitTriggerz ? "Yes" : "No");
 }
 
 /**
@@ -195,37 +180,25 @@ double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *mo
         delta = delta + 2 * M_PI;
     }
     // Prevent the robot from moving through the restricted angle
-    if ((cur_theta + delta) > motor->thetaMax)
+    if ((cur_theta + delta) > (motor->thetaMax - SAFETY_MARGIN))
     {
         return delta - 2 * M_PI;
     }
-    else if ((cur_theta + delta) < motor->thetaMin)
+    else if ((cur_theta + delta) < (motor->thetaMin + SAFETY_MARGIN))
     {
         return delta + 2 * M_PI;
     }
     return delta;
 }
 
-/**
- * @brief Converts an angle to an acceptable angle for the motors.
- *
- * @param delta angle you want to move the motor by.
- * @return double - the motor acceptable angle.
- */
-// double CalculateMotorDelta(double delta, Motor *motor)
-// {
-//     double resolution = (motor->radsPerStep / motor->reduction);
-//     return round(delta / resolution) * resolution;
-// }
-
 bool IsValid(double *soln)
 {
     // Check if normalized angles are within the specified range in radians
-    if ((soln[0] < motor1.thetaMin) || (soln[0] > motor1.thetaMax))
+    if ((soln[0] < (motor1.thetaMin + SAFETY_MARGIN)) || (soln[0] > (motor1.thetaMax - SAFETY_MARGIN)))
     {
         return false;
     }
-    else if ((soln[1] < motor2.thetaMin) || (soln[1] > motor2.thetaMax))
+    else if ((soln[1] < (motor2.thetaMin + SAFETY_MARGIN)) || (soln[1] > (motor2.thetaMax - SAFETY_MARGIN)))
     {
         return false;
     }
@@ -289,25 +262,20 @@ void MoveTo(double x, double y)
     double delta1 = CalculateQuickestValidPath(state.theta1, best[0], &motor1);
     double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
-    // double mdelta1 = CalculateMotorDelta(delta1, &motor1);
-    // double mdelta2 = CalculateMotorDelta(delta2, &motor2);
-
     // Move the motors
-
-    double realdelta1;
-    double realdelta2;
-    double realdeltaz;
-    // MoveByAngle(mdelta1, mdelta2, 0.0, &realdelta1, &realdelta2, &realdeltaz);
+    double mdelta1 = MoveByAngle(&motor1, delta1, 10);
+    double mdelta2 = MoveByAngle(&motor2, delta2, 10);
 
 #ifdef DEBUG
     PrintAnglesInDegrees(mdelta1, mdelta2);
 #endif
-    // printf("Angle delatas: ");
-    // PrintAnglesInDegrees(mdelta1, mdelta2);
+
+    PrintAnglesInDegrees(delta1, delta2);
+    PrintAnglesInDegrees(mdelta1, mdelta2);
 
     // Update the state machine
-    // state.theta1 += mdelta1;
-    // state.theta2 += mdelta2;
+    state.theta1 += mdelta1;
+    state.theta2 += mdelta2;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
 }
 

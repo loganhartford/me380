@@ -41,13 +41,13 @@ int main(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
   while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
   {
+    HAL_Delay(1);
   }
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
 
   // Home the robot
   HomeMotors();
 
-  printf("Homed.\n\r");
   while (1)
   {
     SerialDemo(); // This will halt execution
@@ -225,7 +225,6 @@ void SerialDemo(void)
   printf("Moving to: ");
   PrintCaresianCoords(x, y);
   MoveTo(x, y);
-  printf("Done.\n\r");
   printf("\n\r");
 }
 
