@@ -34,16 +34,11 @@ int main(void)
 
   HMI_Init();
 
-  while (1)
-  {
-    readDigitalPinState(homeButton);
-    readDigitalPinState(runTestButton);
-    readDigitalPinState(autoManButton);
-    printf("\n\r");
-    HAL_Delay(2000);
-  }
-
   InitializeStateMachine();
+
+  // DEBUG - NOTE this is blocking
+  // buttonDebug();
+
   /*
       SystemHealthCheck();
 
