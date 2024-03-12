@@ -1,5 +1,6 @@
 #include "main.h"
 #include "controls.h"
+#include "hmi_hal.h"
 #include "motor_hal.h"
 #include "limit_switch_hal.h"
 
@@ -15,7 +16,6 @@ void Serial_Init(void);
 double ReceiveFloat(void);
 void RecieveCoordinates(double *x, double *y);
 void SerialDemo(void);
-void GPIO_Init(void);
 void SystemHealthCheck(void);
 
 // Limit switches
@@ -27,31 +27,44 @@ int main(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   Serial_Init();
   Motors_Init();
   Limit_Switch_Init();
-  GPIO_Init(); // Initialize GPIO for LED
 
-  InitializeStateMachine();
-
-  SystemHealthCheck();
-
-  // Wait for the home button to be pushed
-  printf("Waiting to home...\n\r");
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
-  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
-  {
-    HAL_Delay(1);
-  }
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
-
-  // Home the robot
-  HomeMotors();
+  HMI_Init();
 
   while (1)
   {
-    SerialDemo(); // This will halt execution
+    readDigitalPinState(homeButton);
+    readDigitalPinState(runTestButton);
+    readDigitalPinState(autoManButton);
+    printf("\n\r");
+    HAL_Delay(2000);
   }
+
+  InitializeStateMachine();
+  /*
+      SystemHealthCheck();
+
+      // Wait for the home button to be pushed
+      printf("Waiting to home...\n\r");
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
+      while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
+      {
+        HAL_Delay(1);
+      }
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
+
+      // Home the robot
+      HomeMotors();
+
+      while (1)
+      {
+        SerialDemo(); // This will halt execution
+      }
+
+    */
 }
 
 #ifdef __GNUC__
@@ -226,42 +239,6 @@ void SerialDemo(void)
   PrintCaresianCoords(x, y);
   MoveTo(x, y);
   printf("\n\r");
-}
-
-/**
- * @brief Initialize general purpose IOs
- *
- */
-void GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  // LED pin configuration
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 0); // Off by default
-
-  GPIO_InitTypeDef GPIO_InitStruct2 = {0};
-
-  // LED pin configuration
-  GPIO_InitStruct2.Pin = GPIO_PIN_8;
-  GPIO_InitStruct2.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
-  GPIO_InitStruct2.Pull = GPIO_NOPULL;
-  GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
-
-  GPIO_InitTypeDef GPIO_InitStruct3 = {0};
-
-  // Homing button
-  GPIO_InitStruct3.Pin = GPIO_PIN_9;
-  GPIO_InitStruct3.Mode = GPIO_MODE_INPUT; // Push Pull Mode
-  GPIO_InitStruct3.Pull = GPIO_NOPULL;
-  GPIO_InitStruct3.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct3);
 }
 
 /**
