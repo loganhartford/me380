@@ -6,8 +6,9 @@ TIM_HandleTypeDef htim5;
 void HMI_Init(void);
 static void TIM5_Init(void);
 void TIM5_IRQHandler(void);
-void changeLEDState(buttonLED butLED, const char *ledMode);
+// void changeLEDState(buttonLED butLED, const char *ledMode);
 void buttonDebug(void);
+
 //   More function prototypes
 
 buttonLED greenLED =
@@ -30,11 +31,9 @@ buttonLED redLED =
         .speed = GPIO_SPEED_FREQ_LOW,
 };
 
+// For TIM5 interrupt
 buttonLED activeLED =
     {
-        //.name = "greenLED",
-        //.port = GPIOC,
-        //.pin = GPIO_PIN_0,
         .mode = GPIO_MODE_OUTPUT_PP,
         .pull = GPIO_NOPULL,
         .speed = GPIO_SPEED_FREQ_LOW,
@@ -95,6 +94,8 @@ void buttonLED_Init(buttonLED *butLED)
     GPIO_InitStruct.Pull = butLED->pull;
     GPIO_InitStruct.Speed = butLED->speed;
     HAL_GPIO_Init(butLED->port, &GPIO_InitStruct);
+
+    butLED->pin_state = HAL_GPIO_ReadPin(butLED->port, butLED->pin);
 }
 
 /**
@@ -170,6 +171,7 @@ void flashLED(buttonLED butLED, double speed)
     double timerPeriod = 1000000 * speed; // 1MHz clock * Speed
     activeLED.port = butLED.port;
     activeLED.pin = butLED.pin;
+    __HAL_TIM_SetCounter(&htim5, 0);
     __HAL_TIM_SET_AUTORELOAD(&htim5, timerPeriod);
     HAL_TIM_Base_Start_IT(&htim5);
 }

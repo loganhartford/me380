@@ -1,6 +1,7 @@
 #include "controls.h"
 #include "motor_hal.h"
 #include "limit_switch_hal.h"
+#include "hmi_hal.h"
 
 // #define DEBUG // Enables serial print statements
 
@@ -8,17 +9,6 @@ void CalculateJointAngle(double x, double y, double solns[2][2]);
 void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
 double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor);
 bool IsValid(double *soln);
-
-/**
- * @brief Initializes the robot state
- *
- */
-void InitializeStateMachine(void)
-{
-    state.homed = 0;                                                          // Not homed yet
-    state.grasping = 0;                                                       // Not grasping
-    CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
-}
 
 /**
  * @brief Converts cartesian coordinates to joint angles of the robot.
@@ -97,9 +87,13 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
 void PrintState()
 {
     printf("Robot State:\n\r");
+    printf("Faulted: %s\n\r", state.faulted ? "Yes" : "No");
     printf("Homed: %s\n\r", state.homed ? "Yes" : "No");
-    printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
-    printf("Current Angles in degrees:"); 
+    printf("Homing: %s\n\r", state.homing ? "Yes" : "No");
+    printf("Manual: %s\n\r", state.manual ? "Yes" : "No");
+    printf("Test Running: %s\n\r", state.testRunning ? "Yes" : "No");
+    // printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
+    printf("Current Angles in degrees:");
     PrintAnglesInDegrees(state.theta1, state.theta2);
     printf("Current Coords in x-y:");
     PrintCaresianCoords(state.x, state.y);
@@ -291,4 +285,67 @@ void MoveBy(double rel_x, double rel_y)
     double new_y = state.y + rel_y;
 
     MoveTo(new_x, new_y);
+}
+
+/**
+ * @brief Update the state machine following an event
+ *
+ * @param toState to: Unhomed, Homing, Faulted, Manual, Auto Wait, Auto Move
+ */
+void updateStateMachine(const char *toState)
+{
+    if (strcmp(toState, "Unhomed") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 0;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(redLED, "Solid");
+    }
+    else if (strcmp(toState, "Homing") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 0;
+        state.homing = 1;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(redLED, "Fast");
+    }
+    else if (strcmp(toState, "Faulted") == 0)
+    {
+        state.faulted = 1;
+        state.homed = 0;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(redLED, "Slow");
+    }
+    else if (strcmp(toState, "Manual") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 1;
+        state.homing = 0;
+        state.manual = 1;
+        state.testRunning = 0;
+        changeLEDState(greenLED, "Slow");
+    }
+    else if (strcmp(toState, "Auto Wait") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 1;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(greenLED, "Solid");
+    }
+    else if (strcmp(toState, "Auto Move") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 1;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 1;
+        changeLEDState(greenLED, "Fast");
+    }
 }

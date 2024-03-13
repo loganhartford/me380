@@ -16,6 +16,7 @@ void Serial_Init(void);
 double ReceiveFloat(void);
 void RecieveCoordinates(double *x, double *y);
 void SerialDemo(void);
+void performTest(void);
 void SystemHealthCheck(void);
 
 // Limit switches
@@ -31,35 +32,43 @@ int main(void)
   Serial_Init();
   Motors_Init();
   Limit_Switch_Init();
-
   HMI_Init();
 
-  InitializeStateMachine();
+  updateStateMachine("Unhomed");
 
-  // DEBUG - NOTE this is blocking
-  // buttonDebug();
+  SystemHealthCheck();
 
-  /*
-      SystemHealthCheck();
+  // Wait for the home button to be pushed
+  printf("Waiting to home...\n\r");
 
-      // Wait for the home button to be pushed
-      printf("Waiting to home...\n\r");
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
-      while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
-      {
-        HAL_Delay(1);
-      }
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
+  while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
+  {
+    HAL_Delay(1);
+  }
 
-      // Home the robot
-      HomeMotors();
+  // Home the robot
+  HomeMotors();
 
-      while (1)
-      {
-        SerialDemo(); // This will halt execution
-      }
-
-    */
+  // Default to auto-wait, where user can either perform the test or switch to manual
+  while (1)
+  {
+    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    {
+      updateStateMachine("Auto Move");
+      performTest();
+      updateStateMachine("Auto Wait");
+    }
+    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    {
+      printf("Switched to Manual Mode (Serial Demo)\n\r");
+      updateStateMachine("Manual");
+      HAL_Delay(500); // So button isn't "double-pressed"
+      SerialDemo();   // To be replaced w/ manual mode
+      printf("Switched to Automatic Mode\n\r");
+      updateStateMachine("Auto Wait");
+    }
+    HAL_Delay(1);
+  }
 }
 
 #ifdef __GNUC__
@@ -138,9 +147,9 @@ void SystemClockConfig(void)
  */
 void ErrorHandler(void)
 {
+  updateStateMachine("Faulted");
   while (1)
   {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
   }
 }
 
@@ -214,9 +223,9 @@ double ReceiveFloat(void)
  */
 void RecieveCoordinates(double *x, double *y)
 {
-  printf("Enter in disired X coordinate: \n\r");
+  printf("Enter in desired X coordinate: \n\r");
   *x = ReceiveFloat();
-  printf("Enter in disred Y corrdinate: \n\r");
+  printf("Enter in desired Y corrdinate: \n\r");
   *y = ReceiveFloat();
 }
 
@@ -226,14 +235,43 @@ void RecieveCoordinates(double *x, double *y)
  */
 void SerialDemo(void)
 {
-  PrintState();
+  // PrintState();
+  while (1)
+  {
+    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    {
+      double x, y;
+      RecieveCoordinates(&x, &y);
+      printf("Moving to: ");
+      PrintCaresianCoords(x, y);
+      MoveTo(x, y);
+      printf("\n\r");
+    }
+    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    {
+      HAL_Delay(500); // So button isn't "double-pressed"
+      return;
+    }
+    HAL_Delay(1);
+  }
+}
 
-  double x, y;
-  RecieveCoordinates(&x, &y);
-  printf("Moving to: ");
-  PrintCaresianCoords(x, y);
-  MoveTo(x, y);
-  printf("\n\r");
+/**
+ * @brief Runs the automatic test as specified in the course outline
+ *
+ */
+void performTest(void)
+{
+  HAL_Delay(1000);
+
+  double xStart = -202.5, yStart = 0, xEnd = 122.5, yEnd = 175;
+  printf("Moving to start\n\r");
+  MoveTo(xStart, yStart);
+  HAL_Delay(4000); // Simulated delay. Z and gripper motion occur here
+
+  printf("Moving to end\n\r");
+  MoveTo(xEnd, yEnd);
+  HAL_Delay(4000); // Simulated delay. Z and gripper motion occur here
 }
 
 /**
@@ -266,6 +304,18 @@ void SystemHealthCheck(void)
   else if (thetazSW.Pin_n_state)
   {
     printf("Error: check thetaz- sw\n\r");
+  }
+  else if (!homeButton.pin_state)
+  {
+    printf("Error: Check home button\n\r");
+  }
+  else if (!runTestButton.pin_state)
+  {
+    printf("Error: Check runTest button\n\r");
+  }
+  else if (!autoManButton.pin_state)
+  {
+    printf("Error: Check autoMan button\n\r");
   }
   else
   {

@@ -229,6 +229,7 @@ void StopMotors(void)
 void HomeMotors(void)
 {
     printf("Homing...\n\r");
+    updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
     MoveByAngle(&motor1, 2 * M_PI, 5);
@@ -250,7 +251,7 @@ void HomeMotors(void)
     }
 
     // Update the state maching
-    state.homed = 1;
+    updateStateMachine("Auto Wait");
     state.theta1 = motor1.thetaMax + theta1;
     state.theta2 = motor2.thetaMax + theta2;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
