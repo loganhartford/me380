@@ -52,8 +52,8 @@ Motor motorz = {
     .dirPin = GPIO_PIN_8,  // D7-PA8
     .dir = CCW,
     .reduction = 1,
-    // .thetaMin = -100.0 / 180.0 * M_PI,
-    // .thetaMax = 100.0 / 180.0 * M_PI,
+    .thetaMin = 0,   // contacting bottom Limit SW
+    .thetaMax = 100, // contacting top limit SW
     .isMoving = 0,
 };
 
@@ -156,6 +156,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     {
         HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CW);
         motor->dir = CW;
+        dist = dist * -1;
     }
     // printf("Input distance: %f\n", dist);
     // double linear_dist = dist / M_PI; // calculating lin dist travelled by rack
@@ -166,7 +167,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
 
     double theta = dist / (M_PI * M_PI);
     // motor->stepsToComplete = (uint32_t)((theta/))
-    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * Z_STEPS_PER_REV * 20);
+    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV); // add 20 back in
 
     float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
@@ -178,7 +179,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         HAL_TIM_Base_Start_IT(&htim2);
     }
 
-    return dist; // fake return atm
+    return dist;
 }
 
 void StepMotor(Motor *motor)
@@ -306,7 +307,7 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
-    MoveByDist(&motorz, 100, 15);
+    MoveByDist(&motorz, -25, 5);
     MoveByAngle(&motor1, 2 * M_PI, 5);
     MoveByAngle(&motor2, 2 * M_PI, 5);
 
@@ -318,6 +319,7 @@ void HomeMotors(void)
 
     // Move back 6 degrees
     // double distz = MoveByDist(&motorz, 5, 1);
+    double distZ = MoveByDist(&motorz, 6.0, 1);
     double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
@@ -326,9 +328,10 @@ void HomeMotors(void)
         HAL_Delay(1);
     }
 
-    // Update the state maching
+    // Update the state machine
     updateStateMachine("Auto Wait");
     state.theta1 = motor1.thetaMax + theta1;
     state.theta2 = motor2.thetaMax + theta2;
+    state.currentZ = motorz.thetaMin + distZ;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
 }

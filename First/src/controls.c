@@ -21,9 +21,12 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
 {
     // Calculate length of end effector vector
     double R = sqrt(x * x + y * y);
+    printf("Current R: %d.%d\n\r", (int)(R), abs((int)((R - (int)(R)) * 100)));
 
     // Angle of vector using atan2 to handle quadrants
     double THETA = atan2(y, x);
+    printf("Current THETA: %d.%d\n\r", (int)(THETA), abs((int)((THETA - (int)(THETA)) * 100)));
+    // printf("Current THETA: %.f\n\r", 2, THETA); // For Debug
 
     // Handle the limits of acos
     double acosarg = (R * R - LINK_1 * LINK_1 - LINK_2 * LINK_2) / (-2 * LINK_1 * LINK_2);
@@ -40,6 +43,7 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         beta = acos(acosarg);
     }
+    printf("Current beta: %d.%d\n\r", (int)(beta), abs((int)((beta - (int)(beta)) * 100)));
 
     double alpha;
     double break_r = sqrt(LINK_2 * LINK_2 - LINK_1 * LINK_1);
@@ -55,6 +59,8 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         alpha = 0.0;
     }
+
+    printf("Current alpha: %d.%d\n\r", (int)alpha, abs((int)((alpha - (int)alpha) * 1000)));
 
     // Assembly both possible solutions [theta1, theta2]
     solns[0][0] = THETA - alpha;
@@ -77,6 +83,9 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
             }
         }
     }
+
+    PrintAnglesInDegrees(solns[0][0], solns[0][1]);
+    PrintAnglesInDegrees(solns[1][0], solns[1][1]);
 
 #ifdef DEBUG
     PrintAnglesInDegrees(solns[0][0], solns[0][1]);
@@ -271,6 +280,32 @@ void MoveTo(double x, double y)
     state.theta1 += mdelta1;
     state.theta2 += mdelta2;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
+}
+
+void MoveToZ(double z)
+{
+    // Check if z coord is within limits
+    if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0))
+    {
+        printf("Invalid Request\n\r");
+        return;
+    }
+    else
+    {
+        double deltaZ = fabs(z - state.currentZ);
+        double mdeltaZ = 0;
+        if (z >= state.currentZ)
+        {
+            mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+        }
+        else if (z < state.currentZ)
+        {
+            deltaZ = deltaZ * -1;
+            mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+        }
+
+        state.currentZ += mdeltaZ; // Updating the state machine
+    }
 }
 
 /**

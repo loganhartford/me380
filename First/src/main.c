@@ -14,7 +14,7 @@ struct stateMachine state = {0};
 static void SystemClockConfig(void);
 void Serial_Init(void);
 double ReceiveFloat(void);
-void RecieveCoordinates(double *x, double *y);
+void RecieveCoordinates(double *x, double *y, double *z);
 void SerialDemo(void);
 void performTest(void);
 void SystemHealthCheck(void);
@@ -221,12 +221,14 @@ double ReceiveFloat(void)
  * @param x pointer to x coordinate
  * @param y pointer to y cordinate
  */
-void RecieveCoordinates(double *x, double *y)
+void RecieveCoordinates(double *x, double *y, double *z)
 {
   printf("Enter in desired X coordinate: \n\r");
   *x = ReceiveFloat();
   printf("Enter in desired Y corrdinate: \n\r");
   *y = ReceiveFloat();
+  printf("Enter in desired Z coordinate: \n\r");
+  *z = ReceiveFloat();
 }
 
 /**
@@ -240,11 +242,12 @@ void SerialDemo(void)
   {
     if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
     {
-      double x, y;
-      RecieveCoordinates(&x, &y);
+      double x, y, z;
+      RecieveCoordinates(&x, &y, &z);
       printf("Moving to: ");
       PrintCaresianCoords(x, y);
       MoveTo(x, y);
+      MoveToZ(z);
       printf("\n\r");
     }
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
@@ -264,14 +267,53 @@ void performTest(void)
 {
   HAL_Delay(1000);
 
-  double xStart = -202.5, yStart = 0, xEnd = 122.5, yEnd = 175;
+  double xStart = -202.5, yStart = 0, xEnd = 122.5, yEnd = 175, zUp = 10, zDown = 50;
+
+  // Moving to Start Location (M1 & M2 Active)
   printf("Moving to start\n\r");
   MoveTo(xStart, yStart);
-  HAL_Delay(4000); // Simulated delay. Z and gripper motion occur here
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(2000);
 
-  printf("Moving to end\n\r");
+  // Moving Rack Down (MZ Active)
+  MoveToZ(zDown);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(3000);
+
+  // gripper should actuate here
+
+  // Moving Rack Back Up (MZ Active)
+  MoveToZ(zUp);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(1000);
+
+  // Moving to End Location (M1 & M2 Active)
+  printf("Moving to End\n\r");
   MoveTo(xEnd, yEnd);
-  HAL_Delay(4000); // Simulated delay. Z and gripper motion occur here
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(1000);
+
+  // Moving Rack Down (MZ Active)
+  MoveToZ(zDown);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(3000);
+
+  // gripper release here
 }
 
 /**
