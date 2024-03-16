@@ -21,12 +21,11 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
 {
     // Calculate length of end effector vector
     double R = sqrt(x * x + y * y);
-    printf("Current R: %d.%d\n\r", (int)(R), abs((int)((R - (int)(R)) * 100)));
+    // printf("Current R: %d.%d\n\r", (int)(R), abs((int)((R - (int)(R)) * 100)));
 
     // Angle of vector using atan2 to handle quadrants
     double THETA = atan2(y, x);
-    printf("Current THETA: %d.%d\n\r", (int)(THETA), abs((int)((THETA - (int)(THETA)) * 100)));
-    // printf("Current THETA: %.f\n\r", 2, THETA); // For Debug
+    // printf("Current THETA: %d.%d\n\r", (int)(THETA), abs((int)((THETA - (int)(THETA)) * 100)));
 
     // Handle the limits of acos
     double acosarg = (R * R - LINK_1 * LINK_1 - LINK_2 * LINK_2) / (-2 * LINK_1 * LINK_2);
@@ -60,7 +59,7 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
         alpha = 0.0;
     }
 
-    printf("Current alpha: %d.%d\n\r", (int)alpha, abs((int)((alpha - (int)alpha) * 1000)));
+    // printf("Current alpha: %d.%d\n\r", (int)alpha, abs((int)((alpha - (int)alpha) * 1000)));
 
     // Assembly both possible solutions [theta1, theta2]
     solns[0][0] = THETA - alpha;
@@ -223,6 +222,9 @@ void MoveTo(double x, double y)
     bool soln1_valid = IsValid(solns[0]);
     bool soln2_valid = IsValid(solns[1]);
 
+    // bool soln1_valid = true;
+    // bool soln2_valid = false;
+
     double *best;
     // If both solutions are valid, take the quicker one
     if (soln1_valid && soln2_valid)
@@ -297,14 +299,16 @@ void MoveToZ(double z)
         if (z >= state.currentZ)
         {
             mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+            state.currentZ += mdeltaZ;
         }
         else if (z < state.currentZ)
         {
             deltaZ = deltaZ * -1;
             mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+            state.currentZ -= mdeltaZ;
         }
 
-        state.currentZ += mdeltaZ; // Updating the state machine
+        // state.currentZ += mdeltaZ; // Updating the state machine
     }
 }
 

@@ -25,8 +25,8 @@ Motor motor1 = {
     .dirPin = GPIO_PIN_4,   // D5-PB4
     .dir = CCW,
     .reduction = 1,
-    .thetaMin = -160.0 / 180.0 * M_PI,
-    .thetaMax = 160.0 / 180.0 * M_PI,
+    .thetaMin = -164.0 / 180.0 * M_PI,
+    .thetaMax = 164.0 / 180.0 * M_PI,
     .isMoving = 0,
 };
 
@@ -39,8 +39,8 @@ Motor motor2 = {
     .dirPin = GPIO_PIN_10, // D6-PB10
     .dir = CCW,
     .reduction = 2,
-    .thetaMin = -100.0 / 180.0 * M_PI,
-    .thetaMax = 100.0 / 180.0 * M_PI,
+    .thetaMin = -110.0 / 180.0 * M_PI,
+    .thetaMax = 110.0 / 180.0 * M_PI,
     .isMoving = 0,
 };
 
@@ -158,16 +158,8 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         motor->dir = CW;
         dist = dist * -1;
     }
-    // printf("Input distance: %f\n", dist);
-    // double linear_dist = dist / M_PI; // calculating lin dist travelled by rack
-    // printf("Linear distance: %f\n", linear_dist);
-    // float rev = linear_dist / (2 * M_PI);
-    // motor->stepsToComplete = (uint32_t)((rev * Z_STEPS_PER_REV * motor->reduction));
-    // printf("Steps To Complete: %.2f\n", motor->stepsToComplete);
-
     double theta = dist / (M_PI * M_PI);
-    // motor->stepsToComplete = (uint32_t)((theta/))
-    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV); // add 20 back in
+    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV);
 
     float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
@@ -307,7 +299,7 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
-    MoveByDist(&motorz, -25, 5);
+    MoveByDist(&motorz, -1000, 5);
     MoveByAngle(&motor1, 2 * M_PI, 5);
     MoveByAngle(&motor2, 2 * M_PI, 5);
 
@@ -318,8 +310,7 @@ void HomeMotors(void)
     HAL_Delay(1000);
 
     // Move back 6 degrees
-    // double distz = MoveByDist(&motorz, 5, 1);
-    double distZ = MoveByDist(&motorz, 6.0, 1);
+    double distZ = MoveByDist(&motorz, 10.0, 5);
     double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
@@ -334,4 +325,6 @@ void HomeMotors(void)
     state.theta2 = motor2.thetaMax + theta2;
     state.currentZ = motorz.thetaMin + distZ;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
+    printf("Current Coords in x-y:");
+    PrintCaresianCoords(state.x, state.y);
 }
