@@ -1,6 +1,7 @@
 #include "limit_switch_hal.h"
 #include "motor_hal.h"
 #include "main.h"
+#include "controls.h"
 
 void EXTI9_5_IRQHandler(void);
 void EXTI15_10_IRQHandler(void);

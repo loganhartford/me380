@@ -4,13 +4,16 @@
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim2;
 
 void Motor_Init(Motor motor);
 void StepMotor(Motor *motor);
 static void TIM3_Init(void);
 static void TIM4_Init(void);
+static void TIM2_Init(void);
 void TIM3_IRQHandler(void);
 void TIM4_IRQHandler(void);
+void TIM2_IRQHandler(void);
 
 // Motor Objects
 Motor motor1 = {
@@ -22,8 +25,8 @@ Motor motor1 = {
     .dirPin = GPIO_PIN_4,   // D5-PB4
     .dir = CCW,
     .reduction = 1,
-    .thetaMin = -160.0 / 180.0 * M_PI,
-    .thetaMax = 160.0 / 180.0 * M_PI,
+    .thetaMin = -164.0 / 180.0 * M_PI,
+    .thetaMax = 164.0 / 180.0 * M_PI,
     .isMoving = 0,
 };
 
@@ -36,8 +39,8 @@ Motor motor2 = {
     .dirPin = GPIO_PIN_10, // D6-PB10
     .dir = CCW,
     .reduction = 2,
-    .thetaMin = -100.0 / 180.0 * M_PI,
-    .thetaMax = 100.0 / 180.0 * M_PI,
+    .thetaMin = -110.0 / 180.0 * M_PI,
+    .thetaMax = 110.0 / 180.0 * M_PI,
     .isMoving = 0,
 };
 
@@ -49,8 +52,8 @@ Motor motorz = {
     .dirPin = GPIO_PIN_8,  // D7-PA8
     .dir = CCW,
     .reduction = 1,
-    // .thetaMin = -100.0 / 180.0 * M_PI,
-    // .thetaMax = 100.0 / 180.0 * M_PI,
+    .thetaMin = 0,   // contacting bottom Limit SW
+    .thetaMax = 100, // contacting top limit SW
     .isMoving = 0,
 };
 
@@ -86,6 +89,7 @@ void Motors_Init(void)
     Motor_Init(motorz);
     TIM3_Init();
     TIM4_Init();
+    TIM2_Init();
 
     motor1.limitSwitch = theta1SW;
     motor2.limitSwitch = theta2SW;
@@ -102,6 +106,7 @@ void Motors_Init(void)
  */
 double MoveByAngle(Motor *motor, double angle, double speedRPM)
 {
+    printf("Angle in MoveByAngle: %f\n", angle);
     if (angle > 0)
     {
         HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CCW);
@@ -139,6 +144,36 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
     return angleToComplete;
 }
 
+double MoveByDist(Motor *motor, double dist, double speedRPM)
+{
+    printf("In MoveByDist function\n\r");
+    if (dist > 0)
+    {
+        HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CCW);
+        motor->dir = CCW;
+    }
+    else
+    {
+        HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CW);
+        motor->dir = CW;
+        dist = dist * -1;
+    }
+    double theta = dist / (M_PI * M_PI);
+    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV);
+
+    float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
+    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
+    motor->isMoving = 1;
+
+    if (motor->name == motorz.name)
+    {
+        __HAL_TIM_SET_AUTORELOAD(&htim2, timerPeriod);
+        HAL_TIM_Base_Start_IT(&htim2);
+    }
+
+    return dist;
+}
+
 void StepMotor(Motor *motor)
 {
     // IsMoving will be set to 0 if a limit switch is engaged
@@ -151,6 +186,10 @@ void StepMotor(Motor *motor)
         else if (motor->name == motor2.name)
         {
             HAL_TIM_Base_Stop_IT(&htim4);
+        }
+        else if (motor->name == motorz.name)
+        {
+            HAL_TIM_Base_Stop_IT(&htim2);
         }
         motor->isMoving = 0;
     }
@@ -212,6 +251,33 @@ void TIM4_IRQHandler(void)
     }
 }
 
+static void TIM2_Init(void)
+{
+    __HAL_RCC_TIM2_CLK_ENABLE();
+
+    htim2.Instance = TIM2;
+    htim2.Init.Prescaler = (uint32_t)((SystemCoreClock / 1000000) - 1); // 1 MHz clock
+    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim2.Init.Period = 0xFFFF; // Max value, update frequency will be set in stepMotor()
+    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    HAL_TIM_Base_Init(&htim2);
+
+    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+}
+
+void TIM2_IRQHandler(void)
+{
+    if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE) != RESET)
+    {
+        if (__HAL_TIM_GET_IT_SOURCE(&htim2, TIM_IT_UPDATE) != RESET)
+        {
+            __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
+            StepMotor(&motorz);
+        }
+    }
+}
+
 /**
  * @brief Will stop all motors immediately.
  *
@@ -220,6 +286,7 @@ void StopMotors(void)
 {
     HAL_TIM_Base_Stop_IT(&htim3);
     HAL_TIM_Base_Stop_IT(&htim4);
+    HAL_TIM_Base_Stop_IT(&htim2);
 }
 
 /**
@@ -232,27 +299,32 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
+    MoveByDist(&motorz, -1000, 5);
     MoveByAngle(&motor1, 2 * M_PI, 5);
     MoveByAngle(&motor2, 2 * M_PI, 5);
 
-    while (motor1.isMoving || motor2.isMoving)
+    while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
         HAL_Delay(1);
     }
     HAL_Delay(1000);
 
     // Move back 6 degrees
+    double distZ = MoveByDist(&motorz, 10.0, 5);
     double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
-    while (motor1.isMoving || motor2.isMoving)
+    while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
         HAL_Delay(1);
     }
 
-    // Update the state maching
+    // Update the state machine
     updateStateMachine("Auto Wait");
     state.theta1 = motor1.thetaMax + theta1;
     state.theta2 = motor2.thetaMax + theta2;
+    state.currentZ = motorz.thetaMin + distZ;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
+    printf("Current Coords in x-y:");
+    PrintCaresianCoords(state.x, state.y);
 }

@@ -40,6 +40,7 @@ extern Motor motorz;
 
 void Motors_Init(void);
 double MoveByAngle(Motor *motor, double angle, double speedRPM);
+double MoveByDist(Motor *motor, double dist, double speedRPM);
 void HomeMotors(void);
 void StopMotors(void);
 
