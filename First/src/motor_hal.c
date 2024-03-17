@@ -106,7 +106,6 @@ void Motors_Init(void)
  */
 double MoveByAngle(Motor *motor, double angle, double speedRPM)
 {
-    printf("Angle in MoveByAngle: %f\n", angle);
     if (angle > 0)
     {
         HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CCW);
@@ -118,10 +117,20 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
         motor->dir = CW;
         angle = angle * -1;
     }
-    motor->stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor->reduction);
 
-    float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
-    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
+    // Gain scheduling setup
+    motor->stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor->reduction);
+    // Speed up for first 1/4 steps
+    motor->stepsToSpeedUp = 3.0 / 4.0 * motor->stepsToComplete;
+    // Slow down for last 1/4 steps
+    motor->stepsToSlowDown = 1.0 / 4.0 * motor->stepsToComplete;
+    // RPM delta per step
+    motor->slope = (speedRPM - MIN_RPM) / (motor->stepsToSlowDown);
+    // Start at the min rpm
+    motor->currentRPM = MIN_RPM;
+
+    float timePerStep = 60.0 / (MIN_RPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;      // Time per toggle, in microseconds
 
     motor->isMoving = 1;
     if (motor->name == motor1.name)
@@ -146,7 +155,6 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
 
 double MoveByDist(Motor *motor, double dist, double speedRPM)
 {
-    printf("In MoveByDist function\n\r");
     if (dist > 0)
     {
         HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CCW);
@@ -193,6 +201,35 @@ void StepMotor(Motor *motor)
         }
         motor->isMoving = 0;
     }
+
+    // Only gain schedule on motor 1 or 2
+    if (motor->name == motor1.name || motor->name == motor2.name)
+    {
+        // Adjust the speed of the motor
+        if (motor->stepsToComplete > motor->stepsToSpeedUp)
+        {
+            motor->currentRPM += motor->slope;
+        }
+        else if (motor->stepsToComplete < motor->stepsToSlowDown)
+        {
+            motor->currentRPM -= motor->slope;
+        }
+
+        // Change the timer period based on the current rpm
+        float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+        uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
+
+        // Set the new timer period
+        if (motor->name == motor1.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
+        }
+        else if (motor->name == motor2.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
+        }
+    }
+
     HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
     motor->stepsToComplete--;
 }
@@ -299,22 +336,22 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
-    MoveByDist(&motorz, -1000, 5);
+    // MoveByDist(&motorz, -1000, 5);
     MoveByAngle(&motor1, 2 * M_PI, 5);
     MoveByAngle(&motor2, 2 * M_PI, 5);
 
-    while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
+    while (motor1.isMoving || motor2.isMoving) // || motorz.isMoving)
     {
         HAL_Delay(1);
     }
     HAL_Delay(1000);
 
     // Move back 6 degrees
-    double distZ = MoveByDist(&motorz, 10.0, 5);
+    // double distZ = MoveByDist(&motorz, 10.0, 5);
     double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
-    while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
+    while (motor1.isMoving || motor2.isMoving) // || motorz.isMoving)
     {
         HAL_Delay(1);
     }
@@ -323,7 +360,7 @@ void HomeMotors(void)
     updateStateMachine("Auto Wait");
     state.theta1 = motor1.thetaMax + theta1;
     state.theta2 = motor2.thetaMax + theta2;
-    state.currentZ = motorz.thetaMin + distZ;
+    // state.currentZ = motorz.thetaMin + distZ;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
     printf("Current Coords in x-y:");
     PrintCaresianCoords(state.x, state.y);

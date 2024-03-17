@@ -48,26 +48,33 @@ int main(void)
 
   // Home the robot
   HomeMotors();
+  HAL_Delay(1000); // del
 
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
   {
-    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
-    {
-      updateStateMachine("Auto Move");
-      performTest();
-      updateStateMachine("Auto Wait");
-    }
-    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
-    {
-      printf("Switched to Manual Mode (Serial Demo)\n\r");
-      updateStateMachine("Manual");
-      HAL_Delay(500); // So button isn't "double-pressed"
-      SerialDemo();   // To be replaced w/ manual mode
-      printf("Switched to Automatic Mode\n\r");
-      updateStateMachine("Auto Wait");
-    }
-    HAL_Delay(1);
+    // if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    // {
+    //   updateStateMachine("Auto Move");
+    //   performTest();
+    //   updateStateMachine("Auto Wait");
+    // }
+    // else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    // {
+    //   printf("Switched to Manual Mode (Serial Demo)\n\r");
+    //   updateStateMachine("Manual");
+    //   HAL_Delay(500); // So button isn't "double-pressed"
+    //   SerialDemo();   // To be replaced w/ manual mode
+    //   printf("Switched to Automatic Mode\n\r");
+    //   updateStateMachine("Auto Wait");
+    // }
+    // SerialDemo();
+    MoveTo(-110.0, 150.0, 15.0);
+    // MoveByAngle(&motor1, -3, 10);
+    HAL_Delay(5000);
+    MoveTo(-200.0, 200.0, 15.0);
+    // MoveByAngle(&motor1, 3, 10);
+    HAL_Delay(5000);
   }
 }
 
@@ -227,8 +234,8 @@ void RecieveCoordinates(double *x, double *y, double *z)
   *x = ReceiveFloat();
   printf("Enter in desired Y corrdinate: \n\r");
   *y = ReceiveFloat();
-  printf("Enter in desired Z coordinate: \n\r");
-  *z = ReceiveFloat();
+  // printf("Enter in desired Z coordinate: \n\r");
+  // *z = ReceiveFloat();
 }
 
 /**
@@ -246,8 +253,8 @@ void SerialDemo(void)
       RecieveCoordinates(&x, &y, &z);
       printf("Moving to: ");
       PrintCaresianCoords(x, y);
-      MoveTo(x, y);
-      MoveToZ(z);
+      MoveTo(x, y, 10.0);
+      // MoveToZ(z);
       printf("\n\r");
     }
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
@@ -271,7 +278,7 @@ void performTest(void)
 
   // Moving to Start Location (M1 & M2 Active)
   printf("Moving to start\n\r");
-  MoveTo(xStart, yStart);
+  MoveTo(xStart, yStart, 15.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
@@ -299,7 +306,7 @@ void performTest(void)
 
   // Moving to End Location (M1 & M2 Active)
   printf("Moving to End\n\r");
-  MoveTo(xEnd, yEnd);
+  MoveTo(xEnd, yEnd, 15.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
