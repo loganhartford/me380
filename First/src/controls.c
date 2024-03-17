@@ -265,8 +265,21 @@ void MoveTo(double x, double y, double rpm)
     double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
     // Path planning
-    double rpm1 = rpm * fabs(delta1 / delta2);
-    double rpm2 = rpm * fabs(delta2 / delta1);
+    double rpmDelta, rpm1, rpm2;
+    double magDelta1 = fabs(delta1);
+    double magDelta2 = fabs(delta2);
+    if (delta1 > delta2)
+    {
+        rpmDelta = rpm * ((magDelta1 - magDelta2) / (magDelta1 + magDelta2));
+        rpm1 = rpm + rpmDelta;
+        rpm2 = rpm - rpmDelta;
+    }
+    else
+    {
+        rpmDelta = rpm * ((magDelta2 - magDelta1) / (magDelta1 + magDelta2));
+        rpm1 = rpm - rpmDelta;
+        rpm2 = rpm + rpmDelta;
+    }
 
     // Ensure RPMs are reasonable
     if (rpm1 > MAX_RPM)
@@ -285,6 +298,9 @@ void MoveTo(double x, double y, double rpm)
     {
         rpm2 = MIN_RPM;
     }
+
+    printf("Moving at rpms: ");
+    PrintCaresianCoords(rpm1, rpm2);
 
     // Move the motors
     double mdelta1 = MoveByAngle(&motor1, delta1, rpm1);
@@ -314,7 +330,7 @@ void MoveToZ(double z)
         double mdeltaZ = 0;
         if (z >= state.currentZ)
         {
-            mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+            mdeltaZ = MoveByDist(&motorz, deltaZ, 25);
             state.currentZ += mdeltaZ;
         }
         else if (z < state.currentZ)

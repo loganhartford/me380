@@ -166,8 +166,8 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         motor->dir = CW;
         dist = dist * -1;
     }
-    double angle = (dist / M_PI); // This is a guess (15mm per rev)
-    motor->stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * (STEPS_PER_REV * 8));
+    double theta = dist / (M_PI * M_PI);
+    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV);
 
     // Gain scheduling setup
     // Speed up for first 1/4 steps
@@ -345,22 +345,22 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
-    // MoveByDist(&motorz, -1000, 5);
+    MoveByDist(&motorz, -1000, 5);
     MoveByAngle(&motor1, 2 * M_PI, 5);
     MoveByAngle(&motor2, 2 * M_PI, 5);
 
-    while (motor1.isMoving || motor2.isMoving) // || motorz.isMoving)
+    while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
         HAL_Delay(1);
     }
     HAL_Delay(1000);
 
     // Move back 6 degrees
-    // double distZ = MoveByDist(&motorz, 10.0, 5);
+    double distZ = MoveByDist(&motorz, 10.0, 5);
     double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
-    while (motor1.isMoving || motor2.isMoving) // || motorz.isMoving)
+    while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
         HAL_Delay(1);
     }
@@ -369,7 +369,7 @@ void HomeMotors(void)
     updateStateMachine("Auto Wait");
     state.theta1 = motor1.thetaMax + theta1;
     state.theta2 = motor2.thetaMax + theta2;
-    // state.currentZ = motorz.thetaMin + distZ;
+    state.currentZ = motorz.thetaMin + distZ;
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
     printf("Current Coords in x-y:");
     PrintCaresianCoords(state.x, state.y);
