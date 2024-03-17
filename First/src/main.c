@@ -48,7 +48,7 @@ int main(void)
 
   // Home the robot
   HomeMotors();
-  HAL_Delay(1000); // del
+  HAL_Delay(1000);
 
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
@@ -71,10 +71,12 @@ int main(void)
     // SerialDemo();
     MoveTo(-110.0, 150.0, 15.0);
     // MoveByAngle(&motor1, -3, 10);
-    HAL_Delay(5000);
+    // MoveByDist(&motorz, -15.0, 50.0);
+    HAL_Delay(4000);
     MoveTo(-200.0, 200.0, 15.0);
     // MoveByAngle(&motor1, 3, 10);
-    HAL_Delay(5000);
+    HAL_Delay(4000);
+    // MoveByDist(&motorz, 15.0, 50.0);
   }
 }
 

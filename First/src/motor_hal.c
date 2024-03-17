@@ -166,8 +166,18 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         motor->dir = CW;
         dist = dist * -1;
     }
-    double theta = dist / (M_PI * M_PI);
-    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV);
+    double angle = (dist / M_PI); // This is a guess (15mm per rev)
+    motor->stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * (STEPS_PER_REV * 8));
+
+    // Gain scheduling setup
+    // Speed up for first 1/4 steps
+    motor->stepsToSpeedUp = 3.0 / 4.0 * motor->stepsToComplete;
+    // Slow down for last 1/4 steps
+    motor->stepsToSlowDown = 1.0 / 4.0 * motor->stepsToComplete;
+    // RPM delta per step
+    motor->slope = (speedRPM - MIN_RPM) / (motor->stepsToSlowDown);
+    // Start at the min rpm
+    motor->currentRPM = MIN_RPM;
 
     float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
@@ -201,33 +211,32 @@ void StepMotor(Motor *motor)
         }
         motor->isMoving = 0;
     }
-
-    // Only gain schedule on motor 1 or 2
-    if (motor->name == motor1.name || motor->name == motor2.name)
+    // Adjust the speed of the motor
+    if (motor->stepsToComplete > motor->stepsToSpeedUp)
     {
-        // Adjust the speed of the motor
-        if (motor->stepsToComplete > motor->stepsToSpeedUp)
-        {
-            motor->currentRPM += motor->slope;
-        }
-        else if (motor->stepsToComplete < motor->stepsToSlowDown)
-        {
-            motor->currentRPM -= motor->slope;
-        }
+        motor->currentRPM += motor->slope;
+    }
+    else if (motor->stepsToComplete < motor->stepsToSlowDown)
+    {
+        motor->currentRPM -= motor->slope;
+    }
 
-        // Change the timer period based on the current rpm
-        float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
-        uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
+    // Change the timer period based on the current rpm
+    float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
 
-        // Set the new timer period
-        if (motor->name == motor1.name)
-        {
-            __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
-        }
-        else if (motor->name == motor2.name)
-        {
-            __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
-        }
+    // Set the new timer period
+    if (motor->name == motor1.name)
+    {
+        __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
+    }
+    else if (motor->name == motor2.name)
+    {
+        __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
+    }
+    else if (motor->name == motorz.name)
+    {
+        __HAL_TIM_SET_AUTORELOAD(&htim2, timerPeriod);
     }
 
     HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
