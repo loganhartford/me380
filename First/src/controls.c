@@ -42,7 +42,7 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         beta = acos(acosarg);
     }
-    printf("Current beta: %d.%d\n\r", (int)(beta), abs((int)((beta - (int)(beta)) * 100)));
+    // printf("Current beta: %d.%d\n\r", (int)(beta), abs((int)((beta - (int)(beta)) * 100)));
 
     double alpha;
     double break_r = sqrt(LINK_2 * LINK_2 - LINK_1 * LINK_1);
@@ -82,9 +82,6 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
             }
         }
     }
-
-    PrintAnglesInDegrees(solns[0][0], solns[0][1]);
-    PrintAnglesInDegrees(solns[1][0], solns[1][1]);
 
 #ifdef DEBUG
     PrintAnglesInDegrees(solns[0][0], solns[0][1]);
@@ -213,7 +210,7 @@ bool IsValid(double *soln)
  * @param x coordniate.
  * @param y coordinate.
  */
-void MoveTo(double x, double y)
+void MoveTo(double x, double y, double rpm)
 {
     double solns[2][2];
     CalculateJointAngle(x, y, solns);
@@ -267,16 +264,51 @@ void MoveTo(double x, double y)
     double delta1 = CalculateQuickestValidPath(state.theta1, best[0], &motor1);
     double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
+    // Path planning
+    double rpmDelta, rpm1, rpm2;
+    double magDelta1 = fabs(delta1);
+    double magDelta2 = fabs(delta2);
+    if (delta1 > delta2)
+    {
+        rpmDelta = rpm * ((magDelta1 - magDelta2) / (magDelta1 + magDelta2));
+        rpm1 = rpm + rpmDelta;
+        rpm2 = rpm - rpmDelta;
+    }
+    else
+    {
+        rpmDelta = rpm * ((magDelta2 - magDelta1) / (magDelta1 + magDelta2));
+        rpm1 = rpm - rpmDelta;
+        rpm2 = rpm + rpmDelta;
+    }
+
+    // Ensure RPMs are reasonable
+    if (rpm1 > MAX_RPM)
+    {
+        rpm1 = MAX_RPM;
+    }
+    else if (rpm1 < MIN_RPM)
+    {
+        rpm1 = MIN_RPM;
+    }
+    if (rpm2 > MAX_RPM)
+    {
+        rpm2 = MAX_RPM;
+    }
+    else if (rpm2 < MIN_RPM)
+    {
+        rpm2 = MIN_RPM;
+    }
+
+    printf("Moving at rpms: ");
+    PrintCaresianCoords(rpm1, rpm2);
+
     // Move the motors
-    double mdelta1 = MoveByAngle(&motor1, delta1, 10);
-    double mdelta2 = MoveByAngle(&motor2, delta2, 10);
+    double mdelta1 = MoveByAngle(&motor1, delta1, rpm1);
+    double mdelta2 = MoveByAngle(&motor2, delta2, rpm2);
 
 #ifdef DEBUG
     PrintAnglesInDegrees(mdelta1, mdelta2);
 #endif
-
-    PrintAnglesInDegrees(delta1, delta2);
-    PrintAnglesInDegrees(mdelta1, mdelta2);
 
     // Update the state machine
     state.theta1 += mdelta1;
@@ -298,7 +330,7 @@ void MoveToZ(double z)
         double mdeltaZ = 0;
         if (z >= state.currentZ)
         {
-            mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+            mdeltaZ = MoveByDist(&motorz, deltaZ, 25);
             state.currentZ += mdeltaZ;
         }
         else if (z < state.currentZ)
@@ -318,12 +350,12 @@ void MoveToZ(double z)
  * @param rel_x x increment.
  * @param rel_y y increment.
  */
-void MoveBy(double rel_x, double rel_y)
+void MoveBy(double rel_x, double rel_y, double rpm)
 {
     double new_x = state.x + rel_x;
     double new_y = state.y + rel_y;
 
-    MoveTo(new_x, new_y);
+    MoveTo(new_x, new_y, rpm);
 }
 
 /**

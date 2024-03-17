@@ -246,7 +246,7 @@ void SerialDemo(void)
       RecieveCoordinates(&x, &y, &z);
       printf("Moving to: ");
       PrintCaresianCoords(x, y);
-      MoveTo(x, y);
+      MoveTo(x, y, 10.0);
       MoveToZ(z);
       printf("\n\r");
     }
@@ -271,7 +271,7 @@ void performTest(void)
 
   // Moving to Start Location (M1 & M2 Active)
   printf("Moving to start\n\r");
-  MoveTo(xStart, yStart);
+  MoveTo(xStart, yStart, 10.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
@@ -299,7 +299,7 @@ void performTest(void)
 
   // Moving to End Location (M1 & M2 Active)
   printf("Moving to End\n\r");
-  MoveTo(xEnd, yEnd);
+  MoveTo(xEnd, yEnd, 10.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
