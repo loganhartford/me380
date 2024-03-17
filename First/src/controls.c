@@ -1,6 +1,7 @@
 #include "controls.h"
 #include "motor_hal.h"
 #include "limit_switch_hal.h"
+#include "hmi_hal.h"
 
 // #define DEBUG // Enables serial print statements
 
@@ -8,17 +9,6 @@ void CalculateJointAngle(double x, double y, double solns[2][2]);
 void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
 double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor);
 bool IsValid(double *soln);
-
-/**
- * @brief Initializes the robot state
- *
- */
-void InitializeStateMachine(void)
-{
-    state.homed = 0;                                                          // Not homed yet
-    state.grasping = 0;                                                       // Not grasping
-    CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y); // Determine homed x, an y position
-}
 
 /**
  * @brief Converts cartesian coordinates to joint angles of the robot.
@@ -31,9 +21,11 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
 {
     // Calculate length of end effector vector
     double R = sqrt(x * x + y * y);
+    // printf("Current R: %d.%d\n\r", (int)(R), abs((int)((R - (int)(R)) * 100)));
 
     // Angle of vector using atan2 to handle quadrants
     double THETA = atan2(y, x);
+    // printf("Current THETA: %d.%d\n\r", (int)(THETA), abs((int)((THETA - (int)(THETA)) * 100)));
 
     // Handle the limits of acos
     double acosarg = (R * R - LINK_1 * LINK_1 - LINK_2 * LINK_2) / (-2 * LINK_1 * LINK_2);
@@ -50,6 +42,7 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         beta = acos(acosarg);
     }
+    printf("Current beta: %d.%d\n\r", (int)(beta), abs((int)((beta - (int)(beta)) * 100)));
 
     double alpha;
     double break_r = sqrt(LINK_2 * LINK_2 - LINK_1 * LINK_1);
@@ -65,6 +58,8 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         alpha = 0.0;
     }
+
+    // printf("Current alpha: %d.%d\n\r", (int)alpha, abs((int)((alpha - (int)alpha) * 1000)));
 
     // Assembly both possible solutions [theta1, theta2]
     solns[0][0] = THETA - alpha;
@@ -88,6 +83,9 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
         }
     }
 
+    PrintAnglesInDegrees(solns[0][0], solns[0][1]);
+    PrintAnglesInDegrees(solns[1][0], solns[1][1]);
+
 #ifdef DEBUG
     PrintAnglesInDegrees(solns[0][0], solns[0][1]);
     PrintAnglesInDegrees(solns[1][0], solns[1][1]);
@@ -97,9 +95,13 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
 void PrintState()
 {
     printf("Robot State:\n\r");
+    printf("Faulted: %s\n\r", state.faulted ? "Yes" : "No");
     printf("Homed: %s\n\r", state.homed ? "Yes" : "No");
-    printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
-    printf("Current Angles in degrees:"); 
+    printf("Homing: %s\n\r", state.homing ? "Yes" : "No");
+    printf("Manual: %s\n\r", state.manual ? "Yes" : "No");
+    printf("Test Running: %s\n\r", state.testRunning ? "Yes" : "No");
+    // printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
+    printf("Current Angles in degrees:");
     PrintAnglesInDegrees(state.theta1, state.theta2);
     printf("Current Coords in x-y:");
     PrintCaresianCoords(state.x, state.y);
@@ -220,6 +222,9 @@ void MoveTo(double x, double y)
     bool soln1_valid = IsValid(solns[0]);
     bool soln2_valid = IsValid(solns[1]);
 
+    // bool soln1_valid = true;
+    // bool soln2_valid = false;
+
     double *best;
     // If both solutions are valid, take the quicker one
     if (soln1_valid && soln2_valid)
@@ -279,6 +284,34 @@ void MoveTo(double x, double y)
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
 }
 
+void MoveToZ(double z)
+{
+    // Check if z coord is within limits
+    if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0))
+    {
+        printf("Invalid Request\n\r");
+        return;
+    }
+    else
+    {
+        double deltaZ = fabs(z - state.currentZ);
+        double mdeltaZ = 0;
+        if (z >= state.currentZ)
+        {
+            mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+            state.currentZ += mdeltaZ;
+        }
+        else if (z < state.currentZ)
+        {
+            deltaZ = deltaZ * -1;
+            mdeltaZ = MoveByDist(&motorz, deltaZ, 5);
+            state.currentZ -= mdeltaZ;
+        }
+
+        // state.currentZ += mdeltaZ; // Updating the state machine
+    }
+}
+
 /**
  * @brief Increment the robots current position.
  *
@@ -291,4 +324,67 @@ void MoveBy(double rel_x, double rel_y)
     double new_y = state.y + rel_y;
 
     MoveTo(new_x, new_y);
+}
+
+/**
+ * @brief Update the state machine following an event
+ *
+ * @param toState to: Unhomed, Homing, Faulted, Manual, Auto Wait, Auto Move
+ */
+void updateStateMachine(const char *toState)
+{
+    if (strcmp(toState, "Unhomed") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 0;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(redLED, "Solid");
+    }
+    else if (strcmp(toState, "Homing") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 0;
+        state.homing = 1;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(redLED, "Fast");
+    }
+    else if (strcmp(toState, "Faulted") == 0)
+    {
+        state.faulted = 1;
+        state.homed = 0;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(redLED, "Slow");
+    }
+    else if (strcmp(toState, "Manual") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 1;
+        state.homing = 0;
+        state.manual = 1;
+        state.testRunning = 0;
+        changeLEDState(greenLED, "Slow");
+    }
+    else if (strcmp(toState, "Auto Wait") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 1;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 0;
+        changeLEDState(greenLED, "Solid");
+    }
+    else if (strcmp(toState, "Auto Move") == 0)
+    {
+        state.faulted = 0;
+        state.homed = 1;
+        state.homing = 0;
+        state.manual = 0;
+        state.testRunning = 1;
+        changeLEDState(greenLED, "Fast");
+    }
 }

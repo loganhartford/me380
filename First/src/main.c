@@ -1,5 +1,6 @@
 #include "main.h"
 #include "controls.h"
+#include "hmi_hal.h"
 #include "motor_hal.h"
 #include "limit_switch_hal.h"
 
@@ -13,9 +14,9 @@ struct stateMachine state = {0};
 static void SystemClockConfig(void);
 void Serial_Init(void);
 double ReceiveFloat(void);
-void RecieveCoordinates(double *x, double *y);
+void RecieveCoordinates(double *x, double *y, double *z);
 void SerialDemo(void);
-void GPIO_Init(void);
+void performTest(void);
 void SystemHealthCheck(void);
 
 // Limit switches
@@ -27,30 +28,46 @@ int main(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   Serial_Init();
   Motors_Init();
   Limit_Switch_Init();
-  GPIO_Init(); // Initialize GPIO for LED
+  HMI_Init();
 
-  InitializeStateMachine();
+  updateStateMachine("Unhomed");
 
   SystemHealthCheck();
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);
-  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9))
+
+  while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
     HAL_Delay(1);
   }
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
 
   // Home the robot
   HomeMotors();
 
+  // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
   {
-    SerialDemo(); // This will halt execution
+    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    {
+      updateStateMachine("Auto Move");
+      performTest();
+      updateStateMachine("Auto Wait");
+    }
+    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    {
+      printf("Switched to Manual Mode (Serial Demo)\n\r");
+      updateStateMachine("Manual");
+      HAL_Delay(500); // So button isn't "double-pressed"
+      SerialDemo();   // To be replaced w/ manual mode
+      printf("Switched to Automatic Mode\n\r");
+      updateStateMachine("Auto Wait");
+    }
+    HAL_Delay(1);
   }
 }
 
@@ -130,9 +147,9 @@ void SystemClockConfig(void)
  */
 void ErrorHandler(void)
 {
+  updateStateMachine("Faulted");
   while (1)
   {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 1);
   }
 }
 
@@ -204,12 +221,14 @@ double ReceiveFloat(void)
  * @param x pointer to x coordinate
  * @param y pointer to y cordinate
  */
-void RecieveCoordinates(double *x, double *y)
+void RecieveCoordinates(double *x, double *y, double *z)
 {
-  printf("Enter in disired X coordinate: \n\r");
+  printf("Enter in desired X coordinate: \n\r");
   *x = ReceiveFloat();
-  printf("Enter in disred Y corrdinate: \n\r");
+  printf("Enter in desired Y corrdinate: \n\r");
   *y = ReceiveFloat();
+  printf("Enter in desired Z coordinate: \n\r");
+  *z = ReceiveFloat();
 }
 
 /**
@@ -218,50 +237,84 @@ void RecieveCoordinates(double *x, double *y)
  */
 void SerialDemo(void)
 {
-  PrintState();
-
-  double x, y;
-  RecieveCoordinates(&x, &y);
-  printf("Moving to: ");
-  PrintCaresianCoords(x, y);
-  MoveTo(x, y);
-  printf("\n\r");
+  // PrintState();
+  while (1)
+  {
+    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    {
+      double x, y, z;
+      RecieveCoordinates(&x, &y, &z);
+      printf("Moving to: ");
+      PrintCaresianCoords(x, y);
+      MoveTo(x, y);
+      MoveToZ(z);
+      printf("\n\r");
+    }
+    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    {
+      HAL_Delay(500); // So button isn't "double-pressed"
+      return;
+    }
+    HAL_Delay(1);
+  }
 }
 
 /**
- * @brief Initialize general purpose IOs
+ * @brief Runs the automatic test as specified in the course outline
  *
  */
-void GPIO_Init(void)
+void performTest(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  HAL_Delay(1000);
 
-  // LED pin configuration
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  double xStart = -202.5, yStart = 0, xEnd = 122.5, yEnd = 175, zUp = 10, zDown = 50;
 
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, 0); // Off by default
+  // Moving to Start Location (M1 & M2 Active)
+  printf("Moving to start\n\r");
+  MoveTo(xStart, yStart);
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(2000);
 
-  GPIO_InitTypeDef GPIO_InitStruct2 = {0};
+  // Moving Rack Down (MZ Active)
+  MoveToZ(zDown);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(3000);
 
-  // LED pin configuration
-  GPIO_InitStruct2.Pin = GPIO_PIN_8;
-  GPIO_InitStruct2.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull Mode
-  GPIO_InitStruct2.Pull = GPIO_NOPULL;
-  GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
+  // gripper should actuate here
 
-  GPIO_InitTypeDef GPIO_InitStruct3 = {0};
+  // Moving Rack Back Up (MZ Active)
+  MoveToZ(zUp);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(1000);
+  printf("Current z Motor Pos: ");
 
-  // Homing button
-  GPIO_InitStruct3.Pin = GPIO_PIN_9;
-  GPIO_InitStruct3.Mode = GPIO_MODE_INPUT; // Push Pull Mode
-  GPIO_InitStruct3.Pull = GPIO_NOPULL;
-  GPIO_InitStruct3.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct3);
+  // Moving to End Location (M1 & M2 Active)
+  printf("Moving to End\n\r");
+  MoveTo(xEnd, yEnd);
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(1000);
+
+  // Moving Rack Down (MZ Active)
+  MoveToZ(zDown);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(3000);
+
+  // gripper release here
 }
 
 /**
@@ -294,6 +347,18 @@ void SystemHealthCheck(void)
   else if (thetazSW.Pin_n_state)
   {
     printf("Error: check thetaz- sw\n\r");
+  }
+  else if (!homeButton.pin_state)
+  {
+    printf("Error: Check home button\n\r");
+  }
+  else if (!runTestButton.pin_state)
+  {
+    printf("Error: Check runTest button\n\r");
+  }
+  else if (!autoManButton.pin_state)
+  {
+    printf("Error: Check autoMan button\n\r");
   }
   else
   {
