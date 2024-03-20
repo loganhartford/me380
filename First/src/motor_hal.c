@@ -4,16 +4,16 @@
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim7;
 
 void Motor_Init(Motor motor);
 void StepMotor(Motor *motor);
 static void TIM3_Init(void);
 static void TIM4_Init(void);
-static void TIM2_Init(void);
+static void TIM7_Init(void);
 void TIM3_IRQHandler(void);
 void TIM4_IRQHandler(void);
-void TIM2_IRQHandler(void);
+void TIM7_IRQHandler(void);
 
 // Motor Objects
 Motor motor1 = {
@@ -89,7 +89,7 @@ void Motors_Init(void)
     Motor_Init(motorz);
     TIM3_Init();
     TIM4_Init();
-    TIM2_Init();
+    TIM7_Init();
 
     motor1.limitSwitch = theta1SW;
     motor2.limitSwitch = theta2SW;
@@ -166,8 +166,8 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         motor->dir = CW;
         dist = dist * -1;
     }
-    double theta = dist / (M_PI * M_PI);
-    motor->stepsToComplete = (uint32_t)((theta / (2 * M_PI)) * STEPS_PER_REV);
+    double theta = dist / (M_PI);
+    motor->stepsToComplete = (uint32_t)(theta * Z_STEPS_PER_REV);
 
     // Gain scheduling setup
     // Speed up for first 1/4 steps
@@ -179,14 +179,14 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     // Start at the min rpm
     motor->currentRPM = MIN_RPM;
 
-    float timePerStep = 60.0 / (speedRPM * STEPS_PER_REV);              // Time per step in seconds
+    float timePerStep = 60.0 / (speedRPM * Z_STEPS_PER_REV);            // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
     motor->isMoving = 1;
 
     if (motor->name == motorz.name)
     {
-        __HAL_TIM_SET_AUTORELOAD(&htim2, timerPeriod);
-        HAL_TIM_Base_Start_IT(&htim2);
+        __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
+        HAL_TIM_Base_Start_IT(&htim7);
     }
 
     return dist;
@@ -207,7 +207,7 @@ void StepMotor(Motor *motor)
         }
         else if (motor->name == motorz.name)
         {
-            HAL_TIM_Base_Stop_IT(&htim2);
+            HAL_TIM_Base_Stop_IT(&htim7);
         }
         motor->isMoving = 0;
     }
@@ -236,7 +236,7 @@ void StepMotor(Motor *motor)
     }
     else if (motor->name == motorz.name)
     {
-        __HAL_TIM_SET_AUTORELOAD(&htim2, timerPeriod);
+        __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
     }
 
     HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
@@ -297,28 +297,28 @@ void TIM4_IRQHandler(void)
     }
 }
 
-static void TIM2_Init(void)
+static void TIM7_Init(void)
 {
-    __HAL_RCC_TIM2_CLK_ENABLE();
+    __HAL_RCC_TIM7_CLK_ENABLE();
 
-    htim2.Instance = TIM2;
-    htim2.Init.Prescaler = (uint32_t)((SystemCoreClock / 1000000) - 1); // 1 MHz clock
-    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 0xFFFF; // Max value, update frequency will be set in stepMotor()
-    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    HAL_TIM_Base_Init(&htim2);
+    htim7.Instance = TIM7;
+    htim7.Init.Prescaler = (uint32_t)((SystemCoreClock / 1000000) - 1); // 1 MHz clock
+    htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim7.Init.Period = 0xFFFF; // Max value, update frequency will be set in stepMotor()
+    htim7.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    HAL_TIM_Base_Init(&htim7);
 
-    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+    HAL_NVIC_SetPriority(TIM7_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM7_IRQn);
 }
 
-void TIM2_IRQHandler(void)
+void TIM7_IRQHandler(void)
 {
-    if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE) != RESET)
+    if (__HAL_TIM_GET_FLAG(&htim7, TIM_FLAG_UPDATE) != RESET)
     {
-        if (__HAL_TIM_GET_IT_SOURCE(&htim2, TIM_IT_UPDATE) != RESET)
+        if (__HAL_TIM_GET_IT_SOURCE(&htim7, TIM_IT_UPDATE) != RESET)
         {
-            __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
+            __HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
             StepMotor(&motorz);
         }
     }
@@ -332,7 +332,7 @@ void StopMotors(void)
 {
     HAL_TIM_Base_Stop_IT(&htim3);
     HAL_TIM_Base_Stop_IT(&htim4);
-    HAL_TIM_Base_Stop_IT(&htim2);
+    HAL_TIM_Base_Stop_IT(&htim7);
 }
 
 /**
@@ -345,7 +345,7 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     // Move positive until we hit a limit switch
-    MoveByDist(&motorz, -1000, 5);
+    MoveByDist(&motorz, -1000, 25);
     MoveByAngle(&motor1, 2 * M_PI, 5);
     MoveByAngle(&motor2, 2 * M_PI, 5);
 
