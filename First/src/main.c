@@ -295,7 +295,7 @@ void performTest(void)
     HAL_Delay(1);
   }
   HAL_Delay(1000);
-  printf("Current z Motor Pos: ");
+  // printf("Current z Motor Pos: ");
 
   // Moving to End Location (M1 & M2 Active)
   printf("Moving to End\n\r");
