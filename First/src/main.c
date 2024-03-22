@@ -3,11 +3,13 @@
 #include "hmi_hal.h"
 #include "motor_hal.h"
 #include "limit_switch_hal.h"
+#include "stdbool.h"
 
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
 
 UART_HandleTypeDef UartHandle;
+UART_HandleTypeDef huart2;
 
 struct stateMachine state = {0};
 
@@ -24,6 +26,7 @@ void SystemHealthCheck(void);
 int main(void)
 {
   HAL_Init();
+
   SystemClockConfig();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
@@ -41,10 +44,10 @@ int main(void)
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
 
-  while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
-  {
-    HAL_Delay(1);
-  }
+   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
+   {
+     HAL_Delay(1);
+   }
 
   // Home the robot
   HomeMotors();
@@ -278,6 +281,8 @@ void performTest(void)
   }
   HAL_Delay(2000);
 
+  gripperOpen(&gripper);
+
   // Moving Rack Down (MZ Active)
   MoveToZ(zDown);
   while (motorz.isMoving)
@@ -287,7 +292,7 @@ void performTest(void)
   HAL_Delay(3000);
 
   // gripper should actuate here
-
+  gripperClose(&gripper);
   // Moving Rack Back Up (MZ Active)
   MoveToZ(zUp);
   while (motorz.isMoving)
@@ -315,6 +320,7 @@ void performTest(void)
   HAL_Delay(3000);
 
   // gripper release here
+  gripperOpen(&gripper);
 }
 
 /**

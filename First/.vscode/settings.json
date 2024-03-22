@@ -5,6 +5,7 @@
         "stm32f4xx_hal_tim.h": "c",
         "main.h": "c",
         "hmi_hal.h": "c",
-        "limit_switch_hal.h": "c"
+        "limit_switch_hal.h": "c",
+        "string.h": "c"
     }
 }

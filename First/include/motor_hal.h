@@ -35,14 +35,28 @@ typedef struct
 
 } Motor;
 
+typedef struct
+{
+    GPIO_TypeDef *pwmPort;
+    uint16_t pwmPin;
+    float position;         //current position
+    float closedPosition;   // limit when gripper is closing
+    float openPosition;     // limit when gripper is open
+    int currentDraw;        // current drawn by servo
+    bool isOpen;            // Flag to indicate if serco is open or closed
+} ServoMotor;
+
 extern Motor motor1;
 extern Motor motor2;
 extern Motor motorz;
+extern ServoMotor gripper;
 
 void Motors_Init(void);
 double MoveByAngle(Motor *motor, double angle, double speedRPM);
 double MoveByDist(Motor *motor, double dist, double speedRPM);
 void HomeMotors(void);
 void StopMotors(void);
+void gripperClose(ServoMotor *gripper);
+void gripperOpen(ServoMotor *gripper);
 
 #endif
