@@ -9,7 +9,8 @@
 #define STEPS_PER_REV 6400.0
 #define MIN_RPM 5.0
 #define MAX_RPM 20.0
-#define Z_STEPS_PER_REV 400
+#define Z_STEPS_PER_REV 8192.0
+#define Z_MM_PER_REV (15.0 * M_PI)
 
 #define CW 0
 #define CCW 1
@@ -39,11 +40,11 @@ typedef struct
 {
     GPIO_TypeDef *pwmPort;
     uint16_t pwmPin;
-    float position;         //current position
-    float closedPosition;   // limit when gripper is closing
-    float openPosition;     // limit when gripper is open
-    int currentDraw;        // current drawn by servo
-    bool isOpen;            // Flag to indicate if serco is open or closed
+    float position;       // current position
+    float closedPosition; // limit when gripper is closing
+    float openPosition;   // limit when gripper is open
+    int currentDraw;      // current drawn by servo
+    bool isOpen;          // Flag to indicate if serco is open or closed
 } ServoMotor;
 
 extern Motor motor1;

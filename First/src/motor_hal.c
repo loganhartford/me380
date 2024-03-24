@@ -66,9 +66,9 @@ Motor motorz = {
 ServoMotor gripper = {
     .pwmPort = GPIOA,
     .pwmPin = GPIO_PIN_5,
-    .closedPosition = 10,  // limit when gripper is closing
-    .openPosition = 2      // limit when gripper is open
-}; 
+    .closedPosition = 10, // limit when gripper is closing
+    .openPosition = 2     // limit when gripper is open
+};
 
 /**
  * @brief Takes in a motor struct and initialized the associated pins.
@@ -107,9 +107,9 @@ void Motors_Init(void)
     MX_TIM2_Init();
     MX_ADC1_Init();
 
-    if(HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1) != HAL_OK)
+    if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1) != HAL_OK)
     {
-	    ErrorHandler();
+        ErrorHandler();
     }
 
     motor1.limitSwitch = theta1SW;
@@ -153,6 +153,12 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
     float timePerStep = 60.0 / (MIN_RPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;      // Time per toggle, in microseconds
 
+    double angleToComplete = motor->stepsToComplete / STEPS_PER_REV / motor->reduction * 2 * M_PI;
+    if (motor->dir == CW)
+    {
+        angleToComplete = angleToComplete * -1;
+    }
+
     motor->isMoving = 1;
     if (motor->name == motor1.name)
     {
@@ -163,12 +169,6 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
     {
         __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
         HAL_TIM_Base_Start_IT(&htim4);
-    }
-
-    double angleToComplete = motor->stepsToComplete / STEPS_PER_REV / motor->reduction * 2 * M_PI;
-    if (motor->dir == CW)
-    {
-        angleToComplete = angleToComplete * -1;
     }
 
     return angleToComplete;
@@ -187,8 +187,8 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         motor->dir = CW;
         dist = dist * -1;
     }
-    double theta = dist / (M_PI);
-    motor->stepsToComplete = (uint32_t)(theta * Z_STEPS_PER_REV);
+    double revs = dist / Z_MM_PER_REV;
+    motor->stepsToComplete = (uint32_t)(revs * Z_STEPS_PER_REV);
 
     // Gain scheduling setup
     // Speed up for first 1/4 steps
@@ -204,13 +204,19 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
     motor->isMoving = 1;
 
+    double distToComplete = motor->stepsToComplete / Z_STEPS_PER_REV * Z_MM_PER_REV;
+    if (motor->dir == CW)
+    {
+        distToComplete = distToComplete * -1;
+    }
+
     if (motor->name == motorz.name)
     {
         __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
         HAL_TIM_Base_Start_IT(&htim7);
     }
 
-    return dist;
+    return distToComplete;
 }
 
 void StepMotor(Motor *motor)
@@ -406,41 +412,41 @@ void gripperClose(ServoMotor *gripper)
 
     uint16_t raw;
     int average; // currentDraw?
-    //char msg[25];
-    //uint8_t buffer_uart[] = "Limit exceeded\r\n";
+    // char msg[25];
+    // uint8_t buffer_uart[] = "Limit exceeded\r\n";
 
     raw = 0;
     average = 0;
 
-//closing the servo and measuring the current----------------------------------------------------------------------------
-    while(gripper->position <= gripper->closedPosition && average < 700)
+    // closing the servo and measuring the current----------------------------------------------------------------------------
+    while (gripper->position <= gripper->closedPosition && average < 700)
     {
-        //printf("A\n\r");
+        // printf("A\n\r");
         gripper->position += 0.5;
 
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period*gripper->position/200);
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->position / 200);
         average = 0;
-        //for loop is taking 20 readings and taking average to deal with noise
+        // for loop is taking 20 readings and taking average to deal with noise
         for (int j = 0; j < 20; j++)
         {
-            //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+            // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
             HAL_ADC_Start(&hadc1);
             HAL_ADC_PollForConversion(&hadc1, 1);
             raw = HAL_ADC_GetValue(&hadc1);
-            //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+            // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
             average += raw;
             HAL_Delay(1);
-        }        
+        }
 
         average = average / 20;
-        //sprintf(msg, "%hu  ", average);//prints current readings and that the current limit has been exceeded
-        //HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 2);
-            HAL_Delay(1);
-    } 
-    //if statement says we've hit something and that we should get out of the loop
-    if(average > 700)
+        // sprintf(msg, "%hu  ", average);//prints current readings and that the current limit has been exceeded
+        // HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 2);
+        HAL_Delay(1);
+    }
+    // if statement says we've hit something and that we should get out of the loop
+    if (average > 700)
     {
-        //HAL_UART_Transmit(&huart2, buffer_uart, sizeof(buffer_uart), 1);
+        // HAL_UART_Transmit(&huart2, buffer_uart, sizeof(buffer_uart), 1);
         HAL_Delay(1000);
         average = 0;
     }
@@ -454,12 +460,12 @@ void gripperClose(ServoMotor *gripper)
  */
 void gripperOpen(ServoMotor *gripper)
 {
-    while(gripper->position >= gripper->openPosition)
+    while (gripper->position >= gripper->openPosition)
     {
-       gripper->position -= 0.15;
-       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period*gripper->position/200);
-	     HAL_Delay(5);
-    } 
+        gripper->position -= 0.15;
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->position / 200);
+        HAL_Delay(5);
+    }
     gripper->isOpen = true;
 }
 
@@ -469,7 +475,7 @@ static void MX_TIM2_Init(void)
 
     // Enable clock for TIM2
     __HAL_RCC_TIM2_CLK_ENABLE();
-    
+
     // Enable clock for GPIOA (if not already enabled)
     __HAL_RCC_GPIOA_CLK_ENABLE();
 
@@ -498,38 +504,38 @@ static void MX_TIM2_Init(void)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     // Start PWM on TIM2 Channel 1
-    //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    // HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 }
 
 static void MX_ADC1_Init(void)
 {
-  ADC_ChannelConfTypeDef sConfig = {0};
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)*/
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  HAL_ADC_MspInit(&hadc1);
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    ErrorHandler();
-  }
+    ADC_ChannelConfTypeDef sConfig = {0};
+    /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)*/
+    hadc1.Instance = ADC1;
+    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode = DISABLE;
+    hadc1.Init.ContinuousConvMode = DISABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = 1;
+    hadc1.Init.DMAContinuousRequests = DISABLE;
+    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+    HAL_ADC_MspInit(&hadc1);
+    if (HAL_ADC_Init(&hadc1) != HAL_OK)
+    {
+        ErrorHandler();
+    }
 
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-  */
-  sConfig.Channel = ADC_CHANNEL_13;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    ErrorHandler();
-  }
+    /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+     */
+    sConfig.Channel = ADC_CHANNEL_13;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+        ErrorHandler();
+    }
 }

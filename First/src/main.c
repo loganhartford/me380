@@ -18,6 +18,7 @@ void Serial_Init(void);
 double ReceiveFloat(void);
 void RecieveCoordinates(double *x, double *y, double *z);
 void SerialDemo(void);
+void DevSerialDemo(void);
 void performTest(void);
 void SystemHealthCheck(void);
 
@@ -44,10 +45,21 @@ int main(void)
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
 
-   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
-   {
-     HAL_Delay(1);
-   }
+  // while (1)
+  // {
+  //   // MoveByDist(&motorz, (15.0 * M_PI), 25);
+  //   state.currentZ = 10;
+  //   MoveToZ(Z_MM_PER_REV+10);
+  //   HAL_Delay(6000);
+  //   // MoveByDist(&motorz, (-15.0 * M_PI), 25);
+  //   MoveToZ(10);
+  //   HAL_Delay(6000);
+  // }
+
+  while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
+  {
+    HAL_Delay(1);
+  }
 
   // Home the robot
   HomeMotors();
@@ -55,21 +67,25 @@ int main(void)
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
   {
-    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
-    {
-      updateStateMachine("Auto Move");
-      performTest();
-      updateStateMachine("Auto Wait");
-    }
-    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
-    {
-      printf("Switched to Manual Mode (Serial Demo)\n\r");
-      updateStateMachine("Manual");
-      HAL_Delay(500); // So button isn't "double-pressed"
-      SerialDemo();   // To be replaced w/ manual mode
-      printf("Switched to Automatic Mode\n\r");
-      updateStateMachine("Auto Wait");
-    }
+    // if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    // {
+    //   updateStateMachine("Auto Move");
+    //   performTest();
+    //   updateStateMachine("Auto Wait");
+    // }
+    // else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    // {
+    //   printf("Switched to Manual Mode (Serial Demo)\n\r");
+    //   updateStateMachine("Manual");
+    //   HAL_Delay(500); // So button isn't "double-pressed"
+    //   SerialDemo();   // To be replaced w/ manual mode
+    //   printf("Switched to Automatic Mode\n\r");
+    //   updateStateMachine("Auto Wait");
+    // }
+    // HAL_Delay(1);
+
+    // For test only
+    DevSerialDemo();
     HAL_Delay(1);
   }
 }
@@ -240,16 +256,16 @@ void RecieveCoordinates(double *x, double *y, double *z)
  */
 void SerialDemo(void)
 {
-  // PrintState();
+  PrintState();
   while (1)
   {
     if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
     {
       double x, y, z;
       RecieveCoordinates(&x, &y, &z);
-      printf("Moving to: ");
-      PrintCaresianCoords(x, y);
-      MoveTo(x, y, 10.0);
+      // printf("Moving to: ");
+      // PrintCaresianCoords(x, y);
+      // MoveTo(x, y, 10.0);
       MoveToZ(z);
       printf("\n\r");
     }
@@ -260,6 +276,27 @@ void SerialDemo(void)
     }
     HAL_Delay(1);
   }
+}
+
+void DevRecieveCoordinates(double *x, double *y, double *z)
+{
+  // printf("Enter in desired X coordinate: \n\r");
+  // *x = ReceiveFloat();
+  // printf("Enter in desired Y corrdinate: \n\r");
+  // *y = ReceiveFloat();
+  printf("Enter in desired Z coordinate: \n\r");
+  *z = ReceiveFloat();
+}
+
+void DevSerialDemo(void)
+{
+  double x, y, z;
+  DevRecieveCoordinates(&x, &y, &z);
+  // printf("Moving to: ");
+  // PrintCaresianCoords(x, y);
+  // MoveTo(x, y, 10.0);
+  MoveToZ(z);
+  printf("\n\r");
 }
 
 /**

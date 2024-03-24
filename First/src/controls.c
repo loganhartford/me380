@@ -299,9 +299,6 @@ void MoveTo(double x, double y, double rpm)
         rpm2 = MIN_RPM;
     }
 
-    printf("Moving at rpms: ");
-    PrintCaresianCoords(rpm1, rpm2);
-
     // Move the motors
     double mdelta1 = MoveByAngle(&motor1, delta1, rpm1);
     double mdelta2 = MoveByAngle(&motor2, delta2, rpm2);
@@ -335,24 +332,22 @@ void MoveToZ(double z)
         if (z >= state.currentZ)
         {
             mdeltaZ = MoveByDist(&motorz, deltaZ, 25);
-            state.currentZ += mdeltaZ;
         }
         else if (z < state.currentZ)
         {
             deltaZ = deltaZ * -1;
             mdeltaZ = MoveByDist(&motorz, deltaZ, 25);
-            state.currentZ -= mdeltaZ;
         }
+        state.currentZ += mdeltaZ;
 
         int int_part1 = (int)mdeltaZ;
         int decimal_part1 = abs((int)((mdeltaZ - int_part1) * 100)); // 2 decimal places
         printf("Current Motor_Delta: (%d.%d)\n\r", int_part1, decimal_part1);
-        // printf(state.currentZ);
+
         int int_part = (int)state.currentZ;
         int decimal_part = abs((int)((state.currentZ - int_part) * 100)); // 2 decimal places
         printf("Updated Z in State Machine: (%d.%d)\n\r", int_part, decimal_part);
 
-        // state.currentZ += mdeltaZ; // Updating the state machine
     }
 }
 
