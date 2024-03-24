@@ -313,7 +313,7 @@ void MoveTo(double x, double y, double rpm)
     CalculateCartesianCoords(state.theta1, state.theta2, &state.x, &state.y);
 }
 
-void MoveToZ(double z)
+void MoveToZ(double z, double rpm)
 {
     int int_part2 = (int)state.currentZ;
     int decimal_part2 = abs((int)((state.currentZ - int_part2) * 100)); // 2 decimal places
@@ -331,12 +331,12 @@ void MoveToZ(double z)
         double mdeltaZ = 0;
         if (z >= state.currentZ)
         {
-            mdeltaZ = MoveByDist(&motorz, deltaZ, 25);
+            mdeltaZ = MoveByDist(&motorz, deltaZ, rpm);
         }
         else if (z < state.currentZ)
         {
             deltaZ = deltaZ * -1;
-            mdeltaZ = MoveByDist(&motorz, deltaZ, 25);
+            mdeltaZ = MoveByDist(&motorz, deltaZ, rpm);
         }
         state.currentZ += mdeltaZ;
 
@@ -347,7 +347,6 @@ void MoveToZ(double z)
         int int_part = (int)state.currentZ;
         int decimal_part = abs((int)((state.currentZ - int_part) * 100)); // 2 decimal places
         printf("Updated Z in State Machine: (%d.%d)\n\r", int_part, decimal_part);
-
     }
 }
 

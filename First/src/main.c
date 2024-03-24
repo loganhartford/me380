@@ -44,16 +44,21 @@ int main(void)
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
-
+  // TIM1_Init();
+  // gripperOpen(&gripper);
+  // HAL_Delay(2000);
   // while (1)
   // {
   //   // MoveByDist(&motorz, (15.0 * M_PI), 25);
-  //   state.currentZ = 10;
-  //   MoveToZ(Z_MM_PER_REV+10);
-  //   HAL_Delay(6000);
+  //   // MoveToZ(Z_MM_PER_REV + 10, 35.0);
+  //   gripperClose(&gripper);
+  //   // SetServoPosition(0);
+  //   HAL_Delay(1000);
   //   // MoveByDist(&motorz, (-15.0 * M_PI), 25);
-  //   MoveToZ(10);
-  //   HAL_Delay(6000);
+  //   // MoveToZ(10, 35.0);
+  //   gripperOpen(&gripper);
+  //   // SetServoPosition(90);
+  //   HAL_Delay(1000);
   // }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
@@ -266,7 +271,7 @@ void SerialDemo(void)
       // printf("Moving to: ");
       // PrintCaresianCoords(x, y);
       // MoveTo(x, y, 10.0);
-      MoveToZ(z);
+      MoveToZ(z, 25.0);
       printf("\n\r");
     }
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
@@ -295,7 +300,7 @@ void DevSerialDemo(void)
   // printf("Moving to: ");
   // PrintCaresianCoords(x, y);
   // MoveTo(x, y, 10.0);
-  MoveToZ(z);
+  MoveToZ(z, 25.0);
   printf("\n\r");
 }
 
@@ -321,7 +326,7 @@ void performTest(void)
   gripperOpen(&gripper);
 
   // Moving Rack Down (MZ Active)
-  MoveToZ(zDown);
+  MoveToZ(zDown, 25.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
@@ -331,7 +336,7 @@ void performTest(void)
   // gripper should actuate here
   gripperClose(&gripper);
   // Moving Rack Back Up (MZ Active)
-  MoveToZ(zUp);
+  MoveToZ(zUp, 25.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
@@ -349,7 +354,7 @@ void performTest(void)
   HAL_Delay(1000);
 
   // Moving Rack Down (MZ Active)
-  MoveToZ(zDown);
+  MoveToZ(zDown, 25.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);

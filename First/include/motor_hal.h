@@ -60,4 +60,7 @@ void StopMotors(void);
 void gripperClose(ServoMotor *gripper);
 void gripperOpen(ServoMotor *gripper);
 
+void TIM1_Init(void);
+void SetServoPosition(uint8_t angle);
+
 #endif

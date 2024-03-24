@@ -38,7 +38,7 @@ extern struct stateMachine state;
 void updateStateMachine(const char *toState);
 void MoveTo(double x, double y, double rpm);
 void MoveBy(double rel_x, double rel_y, double rpm);
-void MoveToZ(double z);
+void MoveToZ(double z, double rpm);
 void PrintAnglesInDegrees(double theta1, double theta2);
 void PrintCaresianCoords(double x, double y);
 void PrintState(void);
