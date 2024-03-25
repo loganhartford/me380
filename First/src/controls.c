@@ -320,7 +320,7 @@ void MoveToZ(double z, double rpm)
     printf("Existing Z in State Machine: (%d.%d)\n\r", int_part2, decimal_part2);
 
     // Check if z coord is within limits
-    if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0))
+    if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0)) // Neet to fix this once we mak it taller
     {
         printf("Invalid Request\n\r");
         return;

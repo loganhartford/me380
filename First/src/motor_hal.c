@@ -67,8 +67,8 @@ Motor motorz = {
 ServoMotor gripper = {
     .pwmPort = GPIOA,
     .pwmPin = GPIO_PIN_5,
-    .closedPosition = 2, // limit when gripper is closing
-    .openPosition = 9     // limit when gripper is open
+    .closedPosition = 2.2, // limit when gripper is closing
+    .openPosition = 8     // limit when gripper is open
 };
 
 /**
@@ -385,8 +385,8 @@ void HomeMotors(void)
     HAL_Delay(1000);
 
     // Move back 6 degrees
-    double distZ = MoveByDist(&motorz, 10.0, 5);
-    double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
+    double distZ = MoveByDist(&motorz, 2.0, 5);
+    double theta1 = MoveByAngle(&motor1, -10.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)

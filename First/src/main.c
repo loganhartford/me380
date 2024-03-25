@@ -72,26 +72,26 @@ int main(void)
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
   {
-    // if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
-    // {
-    //   updateStateMachine("Auto Move");
-    //   performTest();
-    //   updateStateMachine("Auto Wait");
-    // }
-    // else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
-    // {
-    //   printf("Switched to Manual Mode (Serial Demo)\n\r");
-    //   updateStateMachine("Manual");
-    //   HAL_Delay(500); // So button isn't "double-pressed"
-    //   SerialDemo();   // To be replaced w/ manual mode
-    //   printf("Switched to Automatic Mode\n\r");
-    //   updateStateMachine("Auto Wait");
-    // }
-    // HAL_Delay(1);
-
-    // For test only
-    DevSerialDemo();
+    if (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) == GPIO_PIN_RESET)
+    {
+      updateStateMachine("Auto Move");
+      performTest();
+      updateStateMachine("Auto Wait");
+    }
+    else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+    {
+      printf("Switched to Manual Mode (Serial Demo)\n\r");
+      updateStateMachine("Manual");
+      HAL_Delay(500); // So button isn't "double-pressed"
+      SerialDemo();   // To be replaced w/ manual mode
+      printf("Switched to Automatic Mode\n\r");
+      updateStateMachine("Auto Wait");
+    }
     HAL_Delay(1);
+
+    // // For test only
+    // DevSerialDemo();
+    // HAL_Delay(1);
   }
 }
 
@@ -268,9 +268,9 @@ void SerialDemo(void)
     {
       double x, y, z;
       RecieveCoordinates(&x, &y, &z);
-      // printf("Moving to: ");
-      // PrintCaresianCoords(x, y);
-      // MoveTo(x, y, 10.0);
+      printf("Moving to: ");
+      PrintCaresianCoords(x, y);
+      MoveTo(x, y, 10.0);
       MoveToZ(z, 25.0);
       printf("\n\r");
     }
@@ -312,29 +312,45 @@ void performTest(void)
 {
   HAL_Delay(1000);
 
-  double xStart = -202.5, yStart = 0, xEnd = 122.5, yEnd = 175, zUp = 10, zDown = 50;
+  // What is should be
+  // double xStart = 0, yStart = 202.5, xEnd = 175, yEnd = -122.5, zUp = 2, zDown = 88;
+  // What actually gets us there
+  double xStart = -4, yStart = 198, zUp = 5;
+  double xEnd = 160, yEnd = -120, zDown = 90;
 
   // Moving to Start Location (M1 & M2 Active)
   printf("Moving to start\n\r");
   MoveTo(xStart, yStart, 10.0);
+  MoveToZ(zDown, 25.0);
+  HAL_Delay(500);
+  gripperOpen(&gripper);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
-  HAL_Delay(2000);
-
-  gripperOpen(&gripper);
-
   // Moving Rack Down (MZ Active)
-  MoveToZ(zDown, 25.0);
+
   while (motorz.isMoving)
   {
     HAL_Delay(1);
   }
-  HAL_Delay(3000);
-
   // gripper should actuate here
+  HAL_Delay(1000);
+
+  // while (1)
+  // {
+  //   gripperClose(&gripper);
+  //   HAL_Delay(2000);
+  //   MoveToZ(40, 25.0);
+  //   HAL_Delay(4000);
+  //   MoveToZ(zDown, 25.0);
+  //   HAL_Delay(2000);
+  //   gripperOpen(&gripper);
+  //   HAL_Delay(4000);
+  // }
+
   gripperClose(&gripper);
+  HAL_Delay(1000);
   // Moving Rack Back Up (MZ Active)
   MoveToZ(zUp, 25.0);
   while (motorz.isMoving)
@@ -346,23 +362,35 @@ void performTest(void)
 
   // Moving to End Location (M1 & M2 Active)
   printf("Moving to End\n\r");
-  MoveTo(xEnd, yEnd, 10.0);
+  MoveTo(xEnd, yEnd, 5.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
-  HAL_Delay(1000);
+  // HAL_Delay(1000);
 
   // Moving Rack Down (MZ Active)
-  MoveToZ(zDown, 25.0);
+  MoveToZ(zUp + 15, 25.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
   }
-  HAL_Delay(3000);
 
+  HAL_Delay(1000);
   // gripper release here
   gripperOpen(&gripper);
+  HAL_Delay(1000);
+  MoveTo(xEnd + 70, yEnd, 5.0);
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  MoveTo(xEnd + 70, yEnd + 70, 5.0);
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+  // MoveToZ(zUp + 2, 25.0);
 }
 
 /**
