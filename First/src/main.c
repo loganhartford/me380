@@ -29,10 +29,35 @@ void GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  // Initialize PA1 as analog
+  GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_4; // Add PA4 here
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+void ADC_Select_Channel(uint32_t channel)
+{
+  ADC_ChannelConfTypeDef sConfig = {0};
+  sConfig.Channel = channel;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    ErrorHandler();
+  }
+}
+
+uint32_t Read_ADC_Value(uint32_t channel)
+{
+  ADC_Select_Channel(channel); // Select the channel before reading
+
+  HAL_ADC_Start(&hadc1);
+  if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
+  {
+    return HAL_ADC_GetValue(&hadc1);
+  }
+  return 0; // Return 0 if failed
 }
 
 void ADC_Init(void)
@@ -92,7 +117,7 @@ int main(void)
 
   updateStateMachine("Unhomed");
 
-  SystemHealthCheck();
+  // SystemHealthCheck();
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
@@ -100,12 +125,17 @@ int main(void)
   GPIO_Init();
   ADC_Init();
 
-  while (1)
-  {
-    uint32_t adcValue = Read_ADC_PA1();
-    printf("ADC Value on PA1: %lu\r\n", adcValue);
-    HAL_Delay(1000); // Example delay, adjust as needed
-  }
+  while (1) {
+  uint32_t adcValuePA1 = Read_ADC_Value(ADC_CHANNEL_1);
+  printf("ADC Value on PA1: %lu\r\n", adcValuePA1);
+  // HAL_Delay(500);
+
+  uint32_t adcValuePA4 = Read_ADC_Value(ADC_CHANNEL_4);
+  printf("ADC Value on PA4: %lu\r\n", adcValuePA4);
+  printf("\r\n");
+
+  HAL_Delay(1000); // Example delay, adjust as needed
+}
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
