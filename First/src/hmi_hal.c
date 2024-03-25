@@ -2,12 +2,16 @@
 // #include "main.h"
 
 TIM_HandleTypeDef htim5;
+ADC_HandleTypeDef hadc1;
 
 void HMI_Init(void);
 static void TIM5_Init(void);
 void TIM5_IRQHandler(void);
 // void changeLEDState(buttonLED butLED, const char *ledMode);
 void buttonDebug(void);
+void Pot_Init(Pot *pot);
+void ADC_Init(void);
+void ADC_Select_Channel(uint32_t channel);
 
 //   More function prototypes
 
@@ -69,15 +73,41 @@ buttonLED autoManButton =
         .speed = GPIO_SPEED_FREQ_LOW,
 };
 
-joystick controlJoystick = // UPDATE W/ ABOVE
+Pot xPot =
     {
-        .name = "controlJoystick",
+        .name = "xPot",
         .port = GPIOA,
-        .Pin_grip = GPIO_PIN_4,
-        .Pin_x = ADC_CHANNEL_0,
-        .Pin_y = ADC_CHANNEL_1,
+        .pin = GPIO_PIN_4,
+        .mode = GPIO_MODE_ANALOG,
+        .pull = GPIO_NOPULL,
+        .channel = ADC_CHANNEL_4};
+
+Pot yPot =
+    {
+        .name = "yPot",
+        .port = GPIOA,
+        .pin = GPIO_PIN_1,
+        .mode = GPIO_MODE_ANALOG,
+        .pull = GPIO_NOPULL,
+        .channel = ADC_CHANNEL_1};
+
+Pot zPot =
+    {
+        .name = "zPot",
+        .port = GPIOB,
+        .pin = GPIO_PIN_0,
+        .mode = GPIO_MODE_ANALOG,
+        .pull = GPIO_NOPULL,
+        .channel = ADC_CHANNEL_8};
+
+buttonLED gripButton = {
+    .name = "gripButton",
+    .port = GPIOA,
+    .pin = GPIO_PIN_0,
+    .mode = GPIO_MODE_INPUT,
+    .pull = GPIO_NOPULL,
+    .speed = GPIO_SPEED_FREQ_LOW,
 };
-// Create the other objects
 
 /**
  * @brief Initializes the pins and state of the buttons/LEDs
@@ -98,24 +128,14 @@ void buttonLED_Init(buttonLED *butLED)
     butLED->pin_state = HAL_GPIO_ReadPin(butLED->port, butLED->pin);
 }
 
-/**
- * @brief Initializes the pins and state of the HMI joystick
- *
- * @param stick Joystick object
- */
-void Joystick_Init(joystick *stick)
+void Pot_Init(Pot *pot)
 {
-    // DIGITAL Initialization
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-    // Knob Button
-    GPIO_InitStruct.Pin = stick->Pin_grip;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(stick->port, &GPIO_InitStruct);
-
-    // ANALOG Initializaton - ADD
+    GPIO_InitStruct.Pin = pot->pin;
+    GPIO_InitStruct.Mode = pot->mode;
+    GPIO_InitStruct.Pull = pot->pull;
+    HAL_GPIO_Init(pot->port, &GPIO_InitStruct);
 }
 
 /**
@@ -131,12 +151,80 @@ void HMI_Init(void)
     buttonLED_Init(&homeButton);
     buttonLED_Init(&runTestButton);
     buttonLED_Init(&autoManButton);
+    buttonLED_Init(&gripButton);
 
-    // Joystick_Init(&controlJoystick);
+    // Pots
+    Pot_Init(&xPot);
+    Pot_Init(&yPot);
+    Pot_Init(&zPot);
+    ADC_Init();
+}
 
-    // Pot
+void ADC_Init(void)
+{
+    __HAL_RCC_ADC1_CLK_ENABLE();
 
-    // Screen
+    hadc1.Instance = ADC1;
+    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode = DISABLE;
+    hadc1.Init.ContinuousConvMode = DISABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = 1;
+    hadc1.Init.DMAContinuousRequests = DISABLE;
+    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+    if (HAL_ADC_Init(&hadc1) != HAL_OK)
+    {
+        ErrorHandler();
+    }
+
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.Channel = ADC_CHANNEL_1;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+        ErrorHandler();
+    }
+}
+
+void ADC_Select_Channel(uint32_t channel)
+{
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.Channel = channel;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+        ErrorHandler();
+    }
+}
+
+uint32_t Read_Pot(Pot *pot)
+{
+    ADC_Select_Channel(pot->channel); // Select the channel before reading
+
+    HAL_ADC_Start(&hadc1);
+    if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
+    {
+        return HAL_ADC_GetValue(&hadc1);
+    }
+    return 0; // Return 0 if failed
+}
+
+uint32_t Read_ADC_Value(uint32_t channel)
+{
+    ADC_Select_Channel(channel); // Select the channel before reading
+
+    HAL_ADC_Start(&hadc1);
+    if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
+    {
+        return HAL_ADC_GetValue(&hadc1);
+    }
+    return 0; // Return 0 if failed
 }
 
 static void TIM5_Init(void)
