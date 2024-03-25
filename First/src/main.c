@@ -34,6 +34,21 @@ void GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  GPIO_InitTypeDef GPIO_InitStruct2 = {0};
+  // Initialize PA1 as analog
+  GPIO_InitStruct2.Pin = GPIO_PIN_0; // Add PA4 here
+  GPIO_InitStruct2.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct2.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
+
+  GPIO_InitTypeDef GPIO_InitStruct3 = {0};
+
+  // Configure PA0 as a digital input
+  GPIO_InitStruct3.Pin = GPIO_PIN_0;
+  GPIO_InitStruct3.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct3.Pull = GPIO_NOPULL; // No pull-up or pull-down resistor
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct3);
 }
 
 void ADC_Select_Channel(uint32_t channel)
@@ -125,17 +140,31 @@ int main(void)
   GPIO_Init();
   ADC_Init();
 
-  while (1) {
-  uint32_t adcValuePA1 = Read_ADC_Value(ADC_CHANNEL_1);
-  printf("ADC Value on PA1: %lu\r\n", adcValuePA1);
-  // HAL_Delay(500);
+  while (1)
+  {
+    uint32_t adcValuePA1 = Read_ADC_Value(ADC_CHANNEL_1);
+    printf("ADC Value on PA1: %lu\r\n", adcValuePA1);
+    // HAL_Delay(500);
 
-  uint32_t adcValuePA4 = Read_ADC_Value(ADC_CHANNEL_4);
-  printf("ADC Value on PA4: %lu\r\n", adcValuePA4);
-  printf("\r\n");
+    uint32_t adcValuePA4 = Read_ADC_Value(ADC_CHANNEL_4);
+    printf("ADC Value on PA4: %lu\r\n", adcValuePA4);
 
-  HAL_Delay(1000); // Example delay, adjust as needed
-}
+    uint32_t adcValuePB0 = Read_ADC_Value(ADC_CHANNEL_8);
+    printf("ADC Value on PB0: %lu\r\n", adcValuePB0);
+
+    GPIO_PinState pinState = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+    if (pinState)
+    {
+      printf("Switch is high\r\n");
+    }
+    else
+    {
+      printf("Switch is low\r\n");
+    }
+    printf("\r\n");
+
+    HAL_Delay(1000); // Example delay, adjust as needed
+  }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
