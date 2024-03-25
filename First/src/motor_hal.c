@@ -19,7 +19,7 @@ void TIM4_IRQHandler(void);
 void TIM7_IRQHandler(void);
 void gripperClose(ServoMotor *gripper);
 void gripperOpen(ServoMotor *gripper);
-static void MX_ADC1_Init(void);
+static void MX_ADC1_Init(void); // Not currently used, can delete later
 static void MX_TIM2_Init(void);
 
 // Motor Objects
@@ -68,7 +68,7 @@ ServoMotor gripper = {
     .pwmPort = GPIOA,
     .pwmPin = GPIO_PIN_5,
     .closedPosition = 2.2, // limit when gripper is closing
-    .openPosition = 8     // limit when gripper is open
+    .openPosition = 8      // limit when gripper is open
 };
 
 /**
@@ -411,54 +411,6 @@ void HomeMotors(void)
  */
 void gripperOpen(ServoMotor *gripper)
 {
-    // while (gripper->position <= gripper->closedPosition)
-    // {
-    //     gripper->position += 0.15;
-    //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->position / 200);
-    //     HAL_Delay(5);
-    // }
-
-    // uint16_t raw;
-    // int average; // currentDraw?
-    // // char msg[25];
-    // // uint8_t buffer_uart[] = "Limit exceeded\r\n";
-
-    // raw = 0;
-    // average = 0;
-
-    // closing the servo and measuring the current----------------------------------------------------------------------------
-    // while (gripper->position <= gripper->closedPosition && average < 700)
-    // {
-    //     // printf("A\n\r");
-    //     gripper->position += 0.5;
-
-    //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->position / 200);
-    //     average = 0;
-    //     // // for loop is taking 20 readings and taking average to deal with noise
-    //     // for (int j = 0; j < 20; j++)
-    //     // {
-    //     //     // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    //     //     HAL_ADC_Start(&hadc1);
-    //     //     HAL_ADC_PollForConversion(&hadc1, 1);
-    //     //     raw = HAL_ADC_GetValue(&hadc1);
-    //     //     // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    //     //     average += raw;
-    //     //     HAL_Delay(1);
-    //     // }
-
-    //     // average = average / 20;
-    //     // PrintCaresianCoords(average, 0);
-    //     // sprintf(msg, "%hu  ", average);//prints current readings and that the current limit has been exceeded
-    //     // HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 2);
-    //     HAL_Delay(1);
-    // }
-    // if statement says we've hit something and that we should get out of the loop
-    // if (average > 700)
-    // {
-    //     // HAL_UART_Transmit(&huart2, buffer_uart, sizeof(buffer_uart), 1);
-    //     HAL_Delay(1000);
-    //     average = 0;
-    // }
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->openPosition / 200);
     gripper->isOpen = true;
 }
@@ -470,13 +422,6 @@ void gripperOpen(ServoMotor *gripper)
  */
 void gripperClose(ServoMotor *gripper)
 {
-    // while (gripper->position >= gripper->openPosition)
-    // {
-    //     gripper->position -= 0.15;
-    //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->position / 200);
-    //     HAL_Delay(5);
-    // }
-
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->closedPosition / 200);
     gripper->isOpen = false;
 }
@@ -550,56 +495,4 @@ static void MX_ADC1_Init(void)
     {
         ErrorHandler();
     }
-}
-
-// TIM1 Initialization
-void TIM1_Init(void)
-{
-    TIM_HandleTypeDef htim1;
-    TIM_OC_InitTypeDef sConfigOC = {0};
-
-    __HAL_RCC_TIM1_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Pin = GPIO_PIN_1;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    htim1.Instance = TIM1;
-    htim1.Init.Prescaler = 90 - 1; // Adjust prescaler based on your clock settings to achieve a 1MHz timer clock
-    htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim1.Init.Period = 20000 - 1; // 20ms period for servo control
-    htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
-    {
-        ErrorHandler();
-    }
-
-    sConfigOC.OCMode = TIM_OCMODE_PWM1;
-    sConfigOC.Pulse = 1500; // 1.5 ms initial position
-    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-    {
-        ErrorHandler();
-    }
-
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-}
-
-// Function to set servo position
-// Angle range: 0 to 180 degrees
-void SetServoPosition(uint8_t angle)
-{
-    if (angle > 180)
-    {
-        angle = 180;
-    }
-    uint32_t pulse = (angle * 1000 / 180) + 1000; // Convert angle to pulse width
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
 }

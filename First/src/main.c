@@ -44,22 +44,6 @@ int main(void)
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
-  // TIM1_Init();
-  // gripperOpen(&gripper);
-  // HAL_Delay(2000);
-  // while (1)
-  // {
-  //   // MoveByDist(&motorz, (15.0 * M_PI), 25);
-  //   // MoveToZ(Z_MM_PER_REV + 10, 35.0);
-  //   gripperClose(&gripper);
-  //   // SetServoPosition(0);
-  //   HAL_Delay(1000);
-  //   // MoveByDist(&motorz, (-15.0 * M_PI), 25);
-  //   // MoveToZ(10, 35.0);
-  //   gripperOpen(&gripper);
-  //   // SetServoPosition(90);
-  //   HAL_Delay(1000);
-  // }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
@@ -88,10 +72,6 @@ int main(void)
       updateStateMachine("Auto Wait");
     }
     HAL_Delay(1);
-
-    // // For test only
-    // DevSerialDemo();
-    // HAL_Delay(1);
   }
 }
 
@@ -283,6 +263,13 @@ void SerialDemo(void)
   }
 }
 
+/**
+ * @brief Alternative ReceieveCoordinates for dev purposes
+ *
+ * @param x
+ * @param y
+ * @param z
+ */
 void DevRecieveCoordinates(double *x, double *y, double *z)
 {
   // printf("Enter in desired X coordinate: \n\r");
@@ -293,6 +280,10 @@ void DevRecieveCoordinates(double *x, double *y, double *z)
   *z = ReceiveFloat();
 }
 
+/**
+ * @brief Alternative serial demo for dev purposes
+ *
+ */
 void DevSerialDemo(void)
 {
   double x, y, z;
@@ -337,18 +328,6 @@ void performTest(void)
   // gripper should actuate here
   HAL_Delay(1000);
 
-  // while (1)
-  // {
-  //   gripperClose(&gripper);
-  //   HAL_Delay(2000);
-  //   MoveToZ(40, 25.0);
-  //   HAL_Delay(4000);
-  //   MoveToZ(zDown, 25.0);
-  //   HAL_Delay(2000);
-  //   gripperOpen(&gripper);
-  //   HAL_Delay(4000);
-  // }
-
   gripperClose(&gripper);
   HAL_Delay(1000);
   // Moving Rack Back Up (MZ Active)
@@ -358,7 +337,6 @@ void performTest(void)
     HAL_Delay(1);
   }
   HAL_Delay(1000);
-  // printf("Current z Motor Pos: ");
 
   // Moving to End Location (M1 & M2 Active)
   printf("Moving to End\n\r");
@@ -367,7 +345,6 @@ void performTest(void)
   {
     HAL_Delay(1);
   }
-  // HAL_Delay(1000);
 
   // Moving Rack Down (MZ Active)
   MoveToZ(zUp + 15, 25.0);
@@ -377,9 +354,10 @@ void performTest(void)
   }
 
   HAL_Delay(1000);
-  // gripper release here
   gripperOpen(&gripper);
   HAL_Delay(1000);
+
+  // Move of the dice
   MoveTo(xEnd + 70, yEnd, 5.0);
   while (motor1.isMoving || motor2.isMoving)
   {
@@ -390,7 +368,6 @@ void performTest(void)
   {
     HAL_Delay(1);
   }
-  // MoveToZ(zUp + 2, 25.0);
 }
 
 /**
