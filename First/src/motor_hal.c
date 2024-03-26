@@ -140,21 +140,32 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
         angle = angle * -1;
     }
 
+    motor->stepsCompleted = 0;
+    motor->stepTarget = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor->reduction);
+
     // Gain scheduling setup
-    motor->stepsToComplete = (uint32_t)((angle / (2 * M_PI)) * STEPS_PER_REV * motor->reduction);
     // Speed up for first 1/4 steps
-    motor->stepsToSpeedUp = 3.0 / 4.0 * motor->stepsToComplete;
+    motor->stepsToSpeedUp = 1.0 / 6.0 * motor->stepTarget;
     // Slow down for last 1/4 steps
-    motor->stepsToSlowDown = 1.0 / 4.0 * motor->stepsToComplete;
+    motor->stepsToSlowDown = 5.0 / 6.0 * motor->stepTarget;
     // RPM delta per step
     motor->slope = (speedRPM - MIN_RPM) / (motor->stepsToSlowDown);
     // Start at the min rpm
-    motor->currentRPM = MIN_RPM;
 
-    float timePerStep = 60.0 / (MIN_RPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
-    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;      // Time per toggle, in microseconds
+    printf("\r\n");
+    if (state.manual || state.homing)
+    {
+        motor->currentRPM = speedRPM;
+    }
+    else
+    {
+        motor->currentRPM = MIN_RPM;
+    }
+    PrintCaresianCoords(motor->currentRPM, state.homing);
+    float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
 
-    double angleToComplete = motor->stepsToComplete / STEPS_PER_REV / motor->reduction * 2 * M_PI;
+    double angleToComplete = motor->stepTarget / STEPS_PER_REV / motor->reduction * 2 * M_PI;
     if (motor->dir == CW)
     {
         angleToComplete = angleToComplete * -1;
@@ -189,23 +200,31 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         dist = dist * -1;
     }
     double revs = dist / Z_MM_PER_REV;
-    motor->stepsToComplete = (uint32_t)(revs * Z_STEPS_PER_REV);
+    motor->stepsCompleted = 0;
+    motor->stepTarget = (uint32_t)(revs * Z_STEPS_PER_REV);
 
     // Gain scheduling setup
     // Speed up for first 1/4 steps
-    motor->stepsToSpeedUp = 3.0 / 4.0 * motor->stepsToComplete;
+    motor->stepsToSpeedUp = 1.0 / 6.0 * motor->stepTarget;
     // Slow down for last 1/4 steps
-    motor->stepsToSlowDown = 1.0 / 4.0 * motor->stepsToComplete;
+    motor->stepsToSlowDown = 5.0 / 6.0 * motor->stepTarget;
     // RPM delta per step
-    motor->slope = (speedRPM - MIN_RPM) / (motor->stepsToSlowDown);
+    motor->slope = (speedRPM - MIN_Z_RPM) / (motor->stepsToSpeedUp);
     // Start at the min rpm
-    motor->currentRPM = MIN_RPM;
+    if (state.manual || state.homing)
+    {
+        motor->currentRPM = speedRPM;
+    }
+    else
+    {
+        motor->currentRPM = MIN_Z_RPM;
+    }
 
-    float timePerStep = 60.0 / (speedRPM * Z_STEPS_PER_REV);            // Time per step in seconds
+    float timePerStep = 60.0 / (motor->currentRPM * Z_STEPS_PER_REV);   // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
     motor->isMoving = 1;
 
-    double distToComplete = motor->stepsToComplete / Z_STEPS_PER_REV * Z_MM_PER_REV;
+    double distToComplete = motor->stepTarget / Z_STEPS_PER_REV * Z_MM_PER_REV;
     if (motor->dir == CW)
     {
         distToComplete = distToComplete * -1;
@@ -223,7 +242,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
 void StepMotor(Motor *motor)
 {
     // IsMoving will be set to 0 if a limit switch is engaged
-    if (!motor->stepsToComplete || !motor->isMoving)
+    if ((motor->stepsCompleted == motor->stepTarget) || !motor->isMoving)
     {
         if (motor->name == motor1.name)
         {
@@ -239,36 +258,45 @@ void StepMotor(Motor *motor)
         }
         motor->isMoving = 0;
     }
-    // Adjust the speed of the motor
-    if (motor->stepsToComplete > motor->stepsToSpeedUp)
+    // Adjust the speed of the motor if in automatic mode
+    if (!state.manual && !state.homing)
     {
-        motor->currentRPM += motor->slope;
-    }
-    else if (motor->stepsToComplete < motor->stepsToSlowDown)
-    {
-        motor->currentRPM -= motor->slope;
-    }
+        if (motor->stepsCompleted < motor->stepsToSpeedUp)
+        {
+            motor->currentRPM += motor->slope;
+        }
+        else if (motor->stepsCompleted > motor->stepsToSlowDown)
+        {
+            motor->currentRPM -= motor->slope;
+        }
+        // if (motor->stepsCompleted == motor->stepsToSpeedUp){
+        //     PrintCaresianCoords(motor->currentRPM, motor->slope);
+        // }
 
-    // Change the timer period based on the current rpm
-    float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
-    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
-
-    // Set the new timer period
-    if (motor->name == motor1.name)
-    {
-        __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
-    }
-    else if (motor->name == motor2.name)
-    {
-        __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
-    }
-    else if (motor->name == motorz.name)
-    {
-        __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
+        // Change the timer period based on the current rpm
+        float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+        uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
+        // Set the new timer period
+        if (motor->name == motor1.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
+        }
+        else if (motor->name == motor2.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
+        }
+        else if (motor->name == motorz.name)
+        {
+            if (motor->stepsCompleted == motor->stepsToSpeedUp)
+            {
+                PrintCaresianCoords(motor->currentRPM, motor->slope);
+            }
+            __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
+        }
     }
 
     HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
-    motor->stepsToComplete--;
+    motor->stepsCompleted++;
 }
 
 static void TIM3_Init(void)
@@ -374,9 +402,9 @@ void HomeMotors(void)
 
     gripperClose(&gripper);
     HAL_Delay(1000);
-    MoveByDist(&motorz, -1000, 25);
-    MoveByAngle(&motor1, 2 * M_PI, 5);
-    MoveByAngle(&motor2, 2 * M_PI, 5);
+    MoveByDist(&motorz, -1000, 5.0);
+    MoveByAngle(&motor1, 2 * M_PI, 3.0);
+    MoveByAngle(&motor2, 2 * M_PI, 3.0);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
@@ -385,7 +413,7 @@ void HomeMotors(void)
     HAL_Delay(1000);
 
     // Move back 6 degrees
-    double distZ = MoveByDist(&motorz, 2.0, 5);
+    double distZ = MoveByDist(&motorz, 2.0, 10);
     double theta1 = MoveByAngle(&motor1, -10.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 

@@ -298,7 +298,7 @@ void MoveTo(double x, double y, double rpm)
     {
         rpm2 = MIN_RPM;
     }
-
+    
     // Move the motors
     double mdelta1 = MoveByAngle(&motor1, delta1, rpm1);
     double mdelta2 = MoveByAngle(&motor2, delta2, rpm2);
@@ -317,10 +317,9 @@ void MoveToZ(double z, double rpm)
 {
     int int_part2 = (int)state.currentZ;
     int decimal_part2 = abs((int)((state.currentZ - int_part2) * 100)); // 2 decimal places
-    printf("Existing Z in State Machine: (%d.%d)\n\r", int_part2, decimal_part2);
 
     // Check if z coord is within limits
-    if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0)) // Neet to fix this once we mak it taller
+    if ((z > motorz.thetaMax - Z_SAFETY_MARGIN) || (z < motorz.thetaMin + Z_SAFETY_MARGIN)) // Neet to fix this once we mak it taller
     {
         printf("Invalid Request\n\r");
         return;
@@ -342,11 +341,9 @@ void MoveToZ(double z, double rpm)
 
         int int_part1 = (int)mdeltaZ;
         int decimal_part1 = abs((int)((mdeltaZ - int_part1) * 100)); // 2 decimal places
-        printf("Current Motor_Delta: (%d.%d)\n\r", int_part1, decimal_part1);
 
         int int_part = (int)state.currentZ;
         int decimal_part = abs((int)((state.currentZ - int_part) * 100)); // 2 decimal places
-        printf("Updated Z in State Machine: (%d.%d)\n\r", int_part, decimal_part);
     }
 }
 

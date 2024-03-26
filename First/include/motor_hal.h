@@ -7,8 +7,10 @@
 #include "stm32f4xx_hal_tim.h"
 
 #define STEPS_PER_REV 6400.0
-#define MIN_RPM 5.0
+#define MIN_RPM 1.0
 #define MAX_RPM 20.0
+#define MIN_Z_RPM 5.0
+#define MAX_Z_RPM 25.0
 #define Z_STEPS_PER_REV 8192.0
 #define Z_MM_PER_REV (15.0 * M_PI)
 
@@ -18,15 +20,16 @@
 typedef struct
 {
     const char *name;
-    GPIO_TypeDef *stepPort;   // Port of the motor
-    uint16_t stepPin;         // Pin for stepping
-    GPIO_TypeDef *dirPort;    // Port for the direction
-    uint16_t dirPin;          // Pin to set direction
-    bool dir;                 // Motor direction
-    int reduction;            // Gear reduction of the motor
-    double thetaMax;          // Positive limit switch position
-    double thetaMin;          // Negative limit switch position
-    uint32_t stepsToComplete; // Number of steps the motor has left to complete
+    GPIO_TypeDef *stepPort;  // Port of the motor
+    uint16_t stepPin;        // Pin for stepping
+    GPIO_TypeDef *dirPort;   // Port for the direction
+    uint16_t dirPin;         // Pin to set direction
+    bool dir;                // Motor direction
+    int reduction;           // Gear reduction of the motor
+    double thetaMax;         // Positive limit switch position
+    double thetaMin;         // Negative limit switch position
+    uint32_t stepsCompleted; // Number of steps the motor has left to complete
+    uint32_t stepTarget;
     uint32_t stepsToSpeedUp;  // How many steps the motor has to ramp up speed
     uint32_t stepsToSlowDown; // How many steps the motor has to ramp down speed
     double slope;             // The slope betweent the min and target speed
