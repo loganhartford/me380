@@ -224,11 +224,11 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
     motor->isMoving = 1;
 
-    double distToComplete = motor->stepTarget / Z_STEPS_PER_REV * Z_MM_PER_REV;
-    if (motor->dir == CW)
-    {
-        distToComplete = distToComplete * -1;
-    }
+    // double distToComplete = motor->stepTarget / Z_STEPS_PER_REV * Z_MM_PER_REV;
+    // if (motor->dir == CW)
+    // {
+    //     distToComplete = distToComplete * -1;
+    // }
 
     if (motor->name == motorz.name)
     {
@@ -236,7 +236,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         HAL_TIM_Base_Start_IT(&htim7);
     }
 
-    return distToComplete;
+    return 0;
 }
 
 void StepMotor(Motor *motor)
@@ -254,6 +254,15 @@ void StepMotor(Motor *motor)
         }
         else if (motor->name == motorz.name)
         {
+            double distCompleted = motorz.stepsCompleted / Z_STEPS_PER_REV * Z_MM_PER_REV;
+            if (motorz.dir == CW)
+            {
+                distCompleted += distCompleted * -1;
+            }
+
+            state.currentZ = distCompleted;
+            motorz.stepsCompleted = 0;
+            motorz.stepTarget = 0;
             HAL_TIM_Base_Stop_IT(&htim7);
         }
         motor->isMoving = 0;

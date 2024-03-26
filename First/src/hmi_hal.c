@@ -243,6 +243,7 @@ void readAndFilter(Pot *pot)
 void Manual_Mode(void)
 {
     gripButton.latched = 0;
+    double lastZPos = 0;
     while (1)
     {
         // Read user inputs
@@ -274,11 +275,21 @@ void Manual_Mode(void)
 
         // Move the z axis
         double zPos = zPot.slope * zPot.filtered + zPot.b;
-        PrintCaresianCoords(zPos, state.currentZ);
-        if (fabs(zPos - state.currentZ) > 1.0)
+        if (zPos > (motorz.thetaMax - Z_SAFETY_MARGIN))
         {
-            MoveToZ(zPos, 25.0);
+            zPos = (motorz.thetaMax - Z_SAFETY_MARGIN) - 1;
         }
+        else if (zPos < (motorz.thetaMin + Z_SAFETY_MARGIN))
+        {
+            zPos = (motorz.thetaMin + Z_SAFETY_MARGIN) + 1;
+        }
+
+        if ((fabs(zPos - state.currentZ) > 1.0) && (fabs(zPos - lastZPos) > 1.0))
+        {
+            PrintCaresianCoords(zPos, state.currentZ);
+            MoveToZ(zPos, 10.0);
+        }
+        lastZPos = zPos;
         // PrintCaresianCoords(zPot.slope, );
 
         // PrintCaresianCoords(xPot.value, yPot.value);

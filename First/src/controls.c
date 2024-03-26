@@ -298,7 +298,7 @@ void MoveTo(double x, double y, double rpm)
     {
         rpm2 = MIN_RPM;
     }
-    
+
     // Move the motors
     double mdelta1 = MoveByAngle(&motor1, delta1, rpm1);
     double mdelta2 = MoveByAngle(&motor2, delta2, rpm2);
@@ -315,8 +315,6 @@ void MoveTo(double x, double y, double rpm)
 
 void MoveToZ(double z, double rpm)
 {
-    int int_part2 = (int)state.currentZ;
-    int decimal_part2 = abs((int)((state.currentZ - int_part2) * 100)); // 2 decimal places
 
     // Check if z coord is within limits
     if ((z > motorz.thetaMax - Z_SAFETY_MARGIN) || (z < motorz.thetaMin + Z_SAFETY_MARGIN)) // Neet to fix this once we mak it taller
@@ -326,6 +324,18 @@ void MoveToZ(double z, double rpm)
     }
     else
     {
+        // Check to see if there are any untracked steps
+        if (motorz.stepsCompleted != motorz.stepTarget)
+        {
+            double distCompleted = motorz.stepsCompleted / Z_STEPS_PER_REV * Z_MM_PER_REV;
+            if (motorz.dir == CW)
+            {
+                distCompleted = distCompleted * -1;
+            }
+
+            state.currentZ += distCompleted;
+        }
+
         double deltaZ = fabs(z - state.currentZ);
         double mdeltaZ = 0;
         if (z >= state.currentZ)
@@ -337,13 +347,7 @@ void MoveToZ(double z, double rpm)
             deltaZ = deltaZ * -1;
             mdeltaZ = MoveByDist(&motorz, deltaZ, rpm);
         }
-        state.currentZ += mdeltaZ;
-
-        int int_part1 = (int)mdeltaZ;
-        int decimal_part1 = abs((int)((mdeltaZ - int_part1) * 100)); // 2 decimal places
-
-        int int_part = (int)state.currentZ;
-        int decimal_part = abs((int)((state.currentZ - int_part) * 100)); // 2 decimal places
+        // state.currentZ += mdeltaZ;
     }
 }
 
