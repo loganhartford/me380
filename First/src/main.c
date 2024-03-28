@@ -38,7 +38,7 @@ int main(void)
 
   updateStateMachine("Unhomed");
 
-  // SystemHealthCheck();
+  SystemHealthCheck();
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
