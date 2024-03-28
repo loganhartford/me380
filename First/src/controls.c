@@ -6,7 +6,6 @@
 // #define DEBUG // Enables serial print statements
 
 void CalculateJointAngle(double x, double y, double solns[2][2]);
-void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
 double CalculateQuickestValidPath(double cur_theta, double targ_theta, Motor *motor);
 bool IsValid(double *soln);
 

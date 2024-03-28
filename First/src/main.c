@@ -42,33 +42,6 @@ int main(void)
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
-  // Manual_Mode();
-
-  // while (1)
-  // {
-  //   uint32_t xPotValue = Read_Pot(&xPot);
-  //   printf("xPot %lu\r\n", xPotValue);
-  //   // HAL_Delay(500);
-
-  //   uint32_t yPotValue = Read_Pot(&yPot);
-  //   printf("yPot: %lu\r\n", yPotValue);
-
-  //   uint32_t zPotValue = Read_Pot(&zPot);
-  //   printf("zPot: %lu\r\n", zPotValue);
-
-  //   GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
-  //   if (gripButtonState)
-  //   {
-  //     printf("Switch is high\r\n");
-  //   }
-  //   else
-  //   {
-  //     printf("Switch is low\r\n");
-  //   }
-  //   printf("\r\n");
-
-  //   HAL_Delay(1000); // Example delay, adjust as needed
-  // }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
@@ -90,9 +63,16 @@ int main(void)
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
     {
       printf("Switched to Manual Mode (Serial Demo)\n\r");
+
+      // Set z motor to slider position
       double zPos = zPot.slope * zPot.value + zPot.b;
       MoveToZ(zPos, 35.0);
       HAL_Delay(500); // So button isn't "double-pressed"
+      while (motorz.isMoving)
+      {
+        HAL_Delay(1);
+      }
+
       updateStateMachine("Manual");
 
       Manual_Mode();

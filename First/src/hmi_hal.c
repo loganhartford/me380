@@ -13,6 +13,7 @@ void buttonDebug(void);
 void Pot_Init(Pot *pot);
 void ADC_Init(void);
 void ADC_Select_Channel(uint32_t channel);
+void readAndFilter(Pot *pot);
 
 //   More function prototypes
 
@@ -129,6 +130,11 @@ void buttonLED_Init(buttonLED *butLED)
     butLED->pin_state = HAL_GPIO_ReadPin(butLED->port, butLED->pin);
 }
 
+/**
+ * @brief Initializes a potentiometer
+ *
+ * @param pot Potentiometer object
+ */
 void Pot_Init(Pot *pot)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -172,6 +178,10 @@ void HMI_Init(void)
     zPot.value = Read_Pot(&zPot);
 }
 
+/**
+ * @brief Initialized the ADC peripheral
+ *
+ */
 void ADC_Init(void)
 {
     __HAL_RCC_ADC1_CLK_ENABLE();
@@ -203,6 +213,11 @@ void ADC_Init(void)
     }
 }
 
+/**
+ * @brief Sets the channel for the ADC read
+ *
+ * @param channel ADC channel
+ */
 void ADC_Select_Channel(uint32_t channel)
 {
     ADC_ChannelConfTypeDef sConfig = {0};
@@ -215,6 +230,12 @@ void ADC_Select_Channel(uint32_t channel)
     }
 }
 
+/**
+ * @brief Performs an analog read of a pot.
+ *
+ * @param pot Pot object
+ * @return uint32_t analog read value
+ */
 uint32_t Read_Pot(Pot *pot)
 {
     ADC_Select_Channel(pot->channel); // Select the channel before reading
@@ -227,6 +248,11 @@ uint32_t Read_Pot(Pot *pot)
     return 0; // Return 0 if failed
 }
 
+/**
+ * @brief Reads the value of a potentiometer and low pass filters the value.
+ *
+ * @param pot Potentiometer object
+ */
 void readAndFilter(Pot *pot)
 {
     pot->value = Read_Pot(pot);
@@ -236,18 +262,21 @@ void readAndFilter(Pot *pot)
     }
     else
     {
+        // Low pass filter
         pot->filtered = pot->filtered + (((pot->value - pot->filtered) * pot->alpha));
     }
 }
 
+/**
+ * @brief Enables manual control of the robot by reading HMI inputs.
+ *
+ */
 void Manual_Mode(void)
 {
     gripButton.latched = 0;
-    double lastZPos = 0;
     while (1)
     {
         // Read user inputs
-        // xPot.filtered = xPot.filtered + ((Read_Pot(&xPot) - xPot.filtered) * xPot.alpha);
         readAndFilter(&xPot);
         readAndFilter(&yPot);
         readAndFilter(&zPot);
@@ -259,13 +288,13 @@ void Manual_Mode(void)
             gripButton.latched = 1;
             if (gripper.isOpen)
             {
-                printf("open\r\n");
+                printf("Opening gripper\r\n");
                 gripperClose(&gripper);
             }
             else
             {
+                printf("Closing gripper\r\n");
                 gripperOpen(&gripper);
-                printf("close\r\n");
             }
         }
         else if (gripButton.pin_state)
@@ -273,8 +302,10 @@ void Manual_Mode(void)
             gripButton.latched = 0;
         }
 
-        // Move the z axis
+        // Determine desired Z position
         double zPos = zPot.slope * zPot.filtered + zPot.b;
+
+        // Ensure desired position is within limits
         if (zPos > (motorz.thetaMax - Z_SAFETY_MARGIN))
         {
             zPos = (motorz.thetaMax - Z_SAFETY_MARGIN) - 1;
@@ -284,20 +315,19 @@ void Manual_Mode(void)
             zPos = (motorz.thetaMin + Z_SAFETY_MARGIN) + 1;
         }
 
-        if ((fabs(zPos - state.currentZ) > 1.0) && (fabs(zPos - lastZPos) > 1.0))
+        // Only send a new move command if deisred z pos is different from currentZ
+        if (fabs(zPos - state.currentZ) > 1.0)
         {
-            PrintCaresianCoords(zPos, state.currentZ);
+            printf("Moving Z (From, To): ");
+            PrintCaresianCoords(state.currentZ, zPos);
             MoveToZ(zPos, 10.0);
         }
-        lastZPos = zPos;
-        // PrintCaresianCoords(zPot.slope, );
 
-        // PrintCaresianCoords(xPot.value, yPot.value);
-        // For simplicity, just take th higher speed as the overall speed
-        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0;
-        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0;
-        // PrintCaresianCoords(xSpeed, ySpeed);
+        // Determine speed
+        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0; // Maps pot range from 5-20 RPM
+        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0; // Maps pot range from 5-20 RPM
         double speed;
+        // For simplicity, just take th higher speed as the overall speed
         if (xSpeed > ySpeed)
         {
             speed = xSpeed;
@@ -307,54 +337,60 @@ void Manual_Mode(void)
             speed = ySpeed;
         }
 
-        // For now just make x an y coords binary, can add scaling once everything else works
+        // Determine desired motion in X-Y
         double x, y = 0;
-        if ((xPot.value - 2048.0) > 1000.0)
+        if ((xPot.value - 2048.0) > POT_THRESH)
         {
-            x = 1;
+            x = 1.0;
         }
-        else if ((xPot.value - 2048.0) < -1000.0)
+        else if ((xPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            x = -1;
-        }
-        else
-        {
-            x = 0;
-        }
-        if ((yPot.value - 2048.0) > 1000.0)
-        {
-            y = 1;
-        }
-        else if ((yPot.value - 2048.0) < -1000.0)
-        {
-            y = -1;
+            x = -1.0;
         }
         else
         {
-            y = 0;
+            x = 0.0;
+        }
+        if ((yPot.value - 2048.0) > POT_THRESH)
+        {
+            y = 1.0;
+        }
+        else if ((yPot.value - 2048.0) < (POT_THRESH * -1))
+        {
+            y = -1.0;
+        }
+        else
+        {
+            y = 0.0;
         }
 
-        // Send move command
+        // Send X-Y move command if either are non-zero
+        if (x || y)
+        {
+            printf("Moving by: ");
+            PrintCaresianCoords(x, y);
+            MoveBy(x, y, speed);
+        }
 
-        // PrintCaresianCoords(x, y);
+        // Hold the loop while any of the motors are moving
+        if (motor1.isMoving || motor2.isMoving || motorz.isMoving)
+        {
+            while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
+            {
+                HAL_Delay(1);
+            }
+        }
+        else // if nothing is happening, delay the loop
+        {
+            HAL_Delay(20);
+        }
 
-        /*
-
-        - for position, linear interpolate on each axis from like 1-5 and then add a short delay to the loop to allow for the step discrepancy to matter, might need to play with the delay so that it's long engough for the motor's to
-        - right now the number of requested steps is returned and that is how the position is updated, but if we make another step request before the sequence is completed, it will call again and reset the timmer/motor and the state machine will think it has moved when it has not
-        - would need change to be updating the state machine in the step loop so that only the steps that actually get complete get added
-        - Then it shouldn't matter if we call it again
-        - Same thing with z axis
-        - Implement this first and make sure the demo still works
-        -
-        */
         // Return to automatic mode
         if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
         {
             HAL_Delay(500); // So button isn't "double-pressed"
             return;
         }
-        HAL_Delay(20);
     }
 }
 

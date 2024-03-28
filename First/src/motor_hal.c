@@ -151,8 +151,18 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
     // Start at the min rpm
     motor->currentRPM = MIN_RPM;
 
-    float timePerStep = 60.0 / (MIN_RPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
-    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;      // Time per toggle, in microseconds
+    // If we are in manual, set speed to desired speed right away
+    if (state.manual)
+    {
+        motor->currentRPM = speedRPM;
+    }
+    else
+    {
+        motor->currentRPM = MIN_RPM;
+    }
+
+    float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
 
     double angleToComplete = motor->stepsToComplete / STEPS_PER_REV / motor->reduction * 2 * M_PI;
     if (motor->dir == CW)
@@ -201,7 +211,19 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     // Start at the min rpm
     motor->currentRPM = MIN_RPM;
 
-    float timePerStep = 60.0 / (speedRPM * Z_STEPS_PER_REV);            // Time per step in seconds
+    // If we are in manual, set speed to desired speed right away
+    if (state.manual)
+    {
+        motor->currentRPM = speedRPM;
+    }
+    else
+    {
+        motor->currentRPM = MIN_RPM;
+    }
+
+    float timePerStep = 60.0 / (motor->currentRPM * Z_STEPS_PER_REV); // Time per step in seconds
+    // !!!!!! THE NEXT LINE IS WRONG BUT IT WORKS RIGHT NOW !!!!!!!
+    // float timePerStep = 60.0 / (speedRPM * Z_STEPS_PER_REV);            // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
     motor->isMoving = 1;
 
@@ -239,36 +261,39 @@ void StepMotor(Motor *motor)
         }
         motor->isMoving = 0;
     }
-    // Adjust the speed of the motor
-    if (motor->stepsToComplete > motor->stepsToSpeedUp)
-    {
-        motor->currentRPM += motor->slope;
-    }
-    else if (motor->stepsToComplete < motor->stepsToSlowDown)
-    {
-        motor->currentRPM -= motor->slope;
-    }
 
-    // Change the timer period based on the current rpm
-    float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
-    uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
+    // Don't want to gain schedule when in manual mode
+    if (!state.manual)
+    {
+        if (motor->stepsToComplete > motor->stepsToSpeedUp)
+        {
+            motor->currentRPM += motor->slope;
+        }
+        else if (motor->stepsToComplete < motor->stepsToSlowDown)
+        {
+            motor->currentRPM -= motor->slope;
+        }
 
-    // Set the new timer period
-    if (motor->name == motor1.name)
-    {
-        __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
-    }
-    else if (motor->name == motor2.name)
-    {
-        __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
-    }
-    else if (motor->name == motorz.name)
-    {
-        __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
-    }
+        // Change the timer period based on the current rpm
+        float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+        uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
+        // Set the new timer period
+        if (motor->name == motor1.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
+        }
+        else if (motor->name == motor2.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim4, timerPeriod);
+        }
+        else if (motor->name == motorz.name)
+        {
+            __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
+        }
 
-    HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
-    motor->stepsToComplete--;
+        HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
+        motor->stepsToComplete--;
+    }
 }
 
 static void TIM3_Init(void)
@@ -375,8 +400,8 @@ void HomeMotors(void)
     gripperClose(&gripper);
     HAL_Delay(1000);
     MoveByDist(&motorz, -1000, 25);
-    MoveByAngle(&motor1, 2 * M_PI, 5);
-    MoveByAngle(&motor2, 2 * M_PI, 5);
+    MoveByAngle(&motor1, 200, 5);
+    MoveByAngle(&motor2, 200, 5);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
@@ -386,7 +411,7 @@ void HomeMotors(void)
 
     // Move back 6 degrees
     double distZ = MoveByDist(&motorz, 2.0, 5);
-    double theta1 = MoveByAngle(&motor1, -10.0 / 180.0 * M_PI, 1);
+    double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
     double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
@@ -463,36 +488,3 @@ static void MX_TIM2_Init(void)
     // Start PWM on TIM2 Channel 1
     // HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 }
-
-// static void MX_ADC1_Init(void)
-// {
-//     ADC_ChannelConfTypeDef sConfig = {0};
-//     /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)*/
-//     hadc1.Instance = ADC1;
-//     hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-//     hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-//     hadc1.Init.ScanConvMode = DISABLE;
-//     hadc1.Init.ContinuousConvMode = DISABLE;
-//     hadc1.Init.DiscontinuousConvMode = DISABLE;
-//     hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-//     hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-//     hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-//     hadc1.Init.NbrOfConversion = 1;
-//     hadc1.Init.DMAContinuousRequests = DISABLE;
-//     hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-//     HAL_ADC_MspInit(&hadc1);
-//     if (HAL_ADC_Init(&hadc1) != HAL_OK)
-//     {
-//         ErrorHandler();
-//     }
-
-//     /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-//      */
-//     sConfig.Channel = ADC_CHANNEL_13;
-//     sConfig.Rank = 1;
-//     sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-//     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-//     {
-//         ErrorHandler();
-//     }
-// }

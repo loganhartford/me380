@@ -43,6 +43,7 @@ void MoveToZ(double z, double rpm);
 void PrintAnglesInDegrees(double theta1, double theta2);
 void PrintCaresianCoords(double x, double y);
 void PrintState(void);
+void CalculateCartesianCoords(double theta1, double theta2, double *x, double *y);
 
 void dummy(void);
 
