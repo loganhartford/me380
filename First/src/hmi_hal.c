@@ -13,7 +13,6 @@ void buttonDebug(void);
 void Pot_Init(Pot *pot);
 void ADC_Init(void);
 void ADC_Select_Channel(uint32_t channel);
-void readAndFilter(Pot *pot);
 
 //   More function prototypes
 

@@ -43,6 +43,33 @@ int main(void)
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
 
+  // Double check the maping and polarity of potentiometers
+  while (1)
+  {
+    readAndFilter(&xPot);
+    readAndFilter(&yPot);
+    readAndFilter(&zPot);
+
+    printf("xPot %f\r\n", xPot.filtered);
+    printf("yPot: %f\r\n", yPot.filtered);
+    printf("zPot: %f\r\n", zPot.filtered);
+    double zPos = zPot.slope * zPot.filtered + zPot.b;
+    printf("zPos: %f\r\n", zPos);
+
+    GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
+    if (gripButtonState)
+    {
+      printf("Switch is high\r\n");
+    }
+    else
+    {
+      printf("Switch is low\r\n");
+    }
+    printf("\r\n");
+
+    HAL_Delay(1000); // Example delay, adjust as needed
+  }
+
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
     HAL_Delay(1);

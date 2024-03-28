@@ -63,6 +63,7 @@ void HMI_Init(void);
 void changeLEDState(buttonLED butLED, const char *ledMode);
 void buttonDebug(void);
 uint32_t Read_Pot(Pot *pot);
+void readAndFilter(Pot *pot);
 void Manual_Mode(void);
 
 #endif /* __HMI_H */
