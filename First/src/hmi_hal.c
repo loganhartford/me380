@@ -1,5 +1,6 @@
 #include "hmi_hal.h"
-// #include "main.h"
+#include "motor_hal.h"
+#include "controls.h"
 
 TIM_HandleTypeDef htim5;
 ADC_HandleTypeDef hadc1;
@@ -136,6 +137,8 @@ void Pot_Init(Pot *pot)
     GPIO_InitStruct.Mode = pot->mode;
     GPIO_InitStruct.Pull = pot->pull;
     HAL_GPIO_Init(pot->port, &GPIO_InitStruct);
+
+    pot->alpha = 0.1;
 }
 
 /**
@@ -158,6 +161,15 @@ void HMI_Init(void)
     Pot_Init(&yPot);
     Pot_Init(&zPot);
     ADC_Init();
+
+    zPot.max = 860;
+    zPot.min = 5;
+    zPot.slope = ((motorz.thetaMax - Z_SAFETY_MARGIN) - (motorz.thetaMin + Z_SAFETY_MARGIN)) / (zPot.max - zPot.min);
+    zPot.b = (motorz.thetaMax - Z_SAFETY_MARGIN) - (zPot.slope * zPot.max);
+
+    xPot.value = Read_Pot(&xPot);
+    yPot.value = Read_Pot(&yPot);
+    zPot.value = Read_Pot(&zPot);
 }
 
 void ADC_Init(void)
@@ -215,16 +227,135 @@ uint32_t Read_Pot(Pot *pot)
     return 0; // Return 0 if failed
 }
 
-uint32_t Read_ADC_Value(uint32_t channel)
+void readAndFilter(Pot *pot)
 {
-    ADC_Select_Channel(channel); // Select the channel before reading
-
-    HAL_ADC_Start(&hadc1);
-    if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
+    pot->value = Read_Pot(pot);
+    if (!pot->filtered)
     {
-        return HAL_ADC_GetValue(&hadc1);
+        pot->filtered = pot->value;
     }
-    return 0; // Return 0 if failed
+    else
+    {
+        pot->filtered = pot->filtered + (((pot->value - pot->filtered) * pot->alpha));
+    }
+}
+
+void Manual_Mode(void)
+{
+    gripButton.latched = 0;
+    double lastZPos = 0;
+    while (1)
+    {
+        // Read user inputs
+        // xPot.filtered = xPot.filtered + ((Read_Pot(&xPot) - xPot.filtered) * xPot.alpha);
+        readAndFilter(&xPot);
+        readAndFilter(&yPot);
+        readAndFilter(&zPot);
+        gripButton.pin_state = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
+
+        // Actuate the gripper
+        if (!gripButton.pin_state && !gripButton.latched)
+        {
+            gripButton.latched = 1;
+            if (gripper.isOpen)
+            {
+                printf("open\r\n");
+                gripperClose(&gripper);
+            }
+            else
+            {
+                gripperOpen(&gripper);
+                printf("close\r\n");
+            }
+        }
+        else if (gripButton.pin_state)
+        {
+            gripButton.latched = 0;
+        }
+
+        // Move the z axis
+        double zPos = zPot.slope * zPot.filtered + zPot.b;
+        if (zPos > (motorz.thetaMax - Z_SAFETY_MARGIN))
+        {
+            zPos = (motorz.thetaMax - Z_SAFETY_MARGIN) - 1;
+        }
+        else if (zPos < (motorz.thetaMin + Z_SAFETY_MARGIN))
+        {
+            zPos = (motorz.thetaMin + Z_SAFETY_MARGIN) + 1;
+        }
+
+        if ((fabs(zPos - state.currentZ) > 1.0) && (fabs(zPos - lastZPos) > 1.0))
+        {
+            PrintCaresianCoords(zPos, state.currentZ);
+            MoveToZ(zPos, 10.0);
+        }
+        lastZPos = zPos;
+        // PrintCaresianCoords(zPot.slope, );
+
+        // PrintCaresianCoords(xPot.value, yPot.value);
+        // For simplicity, just take th higher speed as the overall speed
+        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0;
+        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0;
+        // PrintCaresianCoords(xSpeed, ySpeed);
+        double speed;
+        if (xSpeed > ySpeed)
+        {
+            speed = xSpeed;
+        }
+        else
+        {
+            speed = ySpeed;
+        }
+
+        // For now just make x an y coords binary, can add scaling once everything else works
+        double x, y = 0;
+        if ((xPot.value - 2048.0) > 1000.0)
+        {
+            x = 1;
+        }
+        else if ((xPot.value - 2048.0) < -1000.0)
+        {
+            x = -1;
+        }
+        else
+        {
+            x = 0;
+        }
+        if ((yPot.value - 2048.0) > 1000.0)
+        {
+            y = 1;
+        }
+        else if ((yPot.value - 2048.0) < -1000.0)
+        {
+            y = -1;
+        }
+        else
+        {
+            y = 0;
+        }
+
+        // Send move command
+
+        // PrintCaresianCoords(x, y);
+
+        /*
+
+        - for position, linear interpolate on each axis from like 1-5 and then add a short delay to the loop to allow for the step discrepancy to matter, might need to play with the delay so that it's long engough for the motor's to
+        - right now the number of requested steps is returned and that is how the position is updated, but if we make another step request before the sequence is completed, it will call again and reset the timmer/motor and the state machine will think it has moved when it has not
+        - would need change to be updating the state machine in the step loop so that only the steps that actually get complete get added
+        - Then it shouldn't matter if we call it again
+        - Same thing with z axis
+        - Implement this first and make sure the demo still works
+        -
+        */
+        // Return to automatic mode
+        if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
+        {
+            HAL_Delay(500); // So button isn't "double-pressed"
+            return;
+        }
+        HAL_Delay(20);
+    }
 }
 
 static void TIM5_Init(void)

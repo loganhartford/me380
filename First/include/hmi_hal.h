@@ -13,6 +13,7 @@ typedef struct
     uint32_t mode;
     uint32_t pull;
     uint32_t speed;
+    bool latched;
 } buttonLED;
 
 typedef struct
@@ -23,6 +24,13 @@ typedef struct
     uint32_t mode;
     uint32_t pull;
     uint32_t channel;
+    uint32_t value;
+    double min;
+    double max;
+    double slope;
+    double b;
+    double alpha;
+    double filtered;
 } Pot;
 
 // typedef struct // UPDATE W/ ABOVE
@@ -53,6 +61,5 @@ void HMI_Init(void);
 void changeLEDState(buttonLED butLED, const char *ledMode);
 void buttonDebug(void);
 uint32_t Read_Pot(Pot *pot);
-uint32_t Read_ADC_Value(uint32_t channel);
 
 #endif /* __HMI_H */

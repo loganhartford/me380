@@ -42,32 +42,33 @@ int main(void)
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
+  // Manual_Mode();
 
-  while (1)
-  {
-    uint32_t xPotValue = Read_Pot(&xPot);
-    printf("xPot %lu\r\n", xPotValue);
-    // HAL_Delay(500);
+  // while (1)
+  // {
+  //   uint32_t xPotValue = Read_Pot(&xPot);
+  //   printf("xPot %lu\r\n", xPotValue);
+  //   // HAL_Delay(500);
 
-    uint32_t yPotValue = Read_Pot(&yPot);
-    printf("yPot: %lu\r\n", yPotValue);
+  //   uint32_t yPotValue = Read_Pot(&yPot);
+  //   printf("yPot: %lu\r\n", yPotValue);
 
-    uint32_t zPotValue = Read_Pot(&zPot);
-    printf("zPot: %lu\r\n", zPotValue);
+  //   uint32_t zPotValue = Read_Pot(&zPot);
+  //   printf("zPot: %lu\r\n", zPotValue);
 
-    GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
-    if (gripButtonState)
-    {
-      printf("Switch is high\r\n");
-    }
-    else
-    {
-      printf("Switch is low\r\n");
-    }
-    printf("\r\n");
+  //   GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
+  //   if (gripButtonState)
+  //   {
+  //     printf("Switch is high\r\n");
+  //   }
+  //   else
+  //   {
+  //     printf("Switch is low\r\n");
+  //   }
+  //   printf("\r\n");
 
-    HAL_Delay(1000); // Example delay, adjust as needed
-  }
+  //   HAL_Delay(1000); // Example delay, adjust as needed
+  // }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
@@ -89,9 +90,14 @@ int main(void)
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
     {
       printf("Switched to Manual Mode (Serial Demo)\n\r");
-      updateStateMachine("Manual");
+      double zPos = zPot.slope * zPot.value + zPot.b;
+      MoveToZ(zPos, 35.0);
       HAL_Delay(500); // So button isn't "double-pressed"
-      SerialDemo();   // To be replaced w/ manual mode
+      updateStateMachine("Manual");
+
+      Manual_Mode();
+
+      // SerialDemo();   // To be replaced w/ manual mode
       printf("Switched to Automatic Mode\n\r");
       updateStateMachine("Auto Wait");
     }
@@ -275,7 +281,7 @@ void SerialDemo(void)
       printf("Moving to: ");
       PrintCaresianCoords(x, y);
       MoveTo(x, y, 10.0);
-      MoveToZ(z, 25.0);
+      MoveToZ(z, 35.0);
       printf("\n\r");
     }
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
@@ -315,7 +321,7 @@ void DevSerialDemo(void)
   // printf("Moving to: ");
   // PrintCaresianCoords(x, y);
   // MoveTo(x, y, 10.0);
-  MoveToZ(z, 25.0);
+  MoveToZ(z, 35.0);
   printf("\n\r");
 }
 
@@ -337,7 +343,7 @@ void performTest(void)
   printf("Moving to start\n\r");
   MoveTo(xStart, yStart, 10.0);
   MoveToZ(zDown, 25.0);
-  HAL_Delay(500);
+  HAL_Delay(1500);
   gripperOpen(&gripper);
   while (motor1.isMoving || motor2.isMoving)
   {
@@ -382,12 +388,12 @@ void performTest(void)
   HAL_Delay(1000);
 
   // Move of the dice
-  MoveTo(xEnd + 70, yEnd, 5.0);
+  MoveTo(xEnd + 70, yEnd, 10.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
-  MoveTo(xEnd + 70, yEnd + 70, 5.0);
+  MoveTo(xEnd + 70, yEnd + 70, 10.0);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
