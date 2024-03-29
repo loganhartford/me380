@@ -211,6 +211,7 @@ bool IsValid(double *soln)
  */
 void MoveTo(double x, double y, double rpm)
 {
+    // PrintCaresianCoords(x,y);
     double solns[2][2];
     CalculateJointAngle(x, y, solns);
 
@@ -259,7 +260,7 @@ void MoveTo(double x, double y, double rpm)
         printf("Invalid Request\n\r");
         return;
     }
-
+    
     double delta1 = CalculateQuickestValidPath(state.theta1, best[0], &motor1);
     double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
@@ -333,8 +334,6 @@ void MoveToZ(double z, double rpm)
             deltaZ = deltaZ * -1;
             mdeltaZ = MoveByDist(&motorz, deltaZ, rpm);
         }
-        printf("Moving (to, from):");
-        PrintCaresianCoords(z, state.currentZ);
         state.currentZ += mdeltaZ;
     }
 }

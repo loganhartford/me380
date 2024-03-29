@@ -322,10 +322,8 @@ void Manual_Mode(void)
         }
 
         // Only send a new move command if deisred z pos is different from currentZ
-        if (fabs(zPot.pos - state.currentZ) > 1.0)
+        if (fabs(zPot.pos - state.currentZ) > 5.0)
         {
-            printf("Moving Z (From, To): ");
-            PrintCaresianCoords(state.currentZ, zPot.pos);
             MoveToZ(zPot.pos, 10.0);
         }
 
@@ -373,8 +371,6 @@ void Manual_Mode(void)
         // Send X-Y move command if either are non-zero
         if (x || y)
         {
-            printf("Moving by: ");
-            PrintCaresianCoords(x, y);
             MoveBy(x, y, speed);
         }
 
@@ -387,7 +383,6 @@ void Manual_Mode(void)
                 readAndFilter(&xPot);
                 readAndFilter(&yPot);
                 readAndFilter(&zPot);
-                HAL_Delay(20);
             }
         }
         else // if nothing is happening, delay the loop

@@ -109,8 +109,9 @@ int main(void)
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
     {
       printf("Switched to Manual Mode\n\r");
+      MoveTo(-150.0, 150.0, 5.0);
       HAL_Delay(500); // So button isn't "double-pressed"
-      while (motorz.isMoving)
+      while (motor1.isMoving || motor2.isMoving)
       {
         HAL_Delay(1);
       }

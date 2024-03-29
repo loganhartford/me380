@@ -128,6 +128,7 @@ void Motors_Init(void)
  */
 double MoveByAngle(Motor *motor, double angle, double speedRPM)
 {
+    motor->isMoving = 1;
     if (angle > 0)
     {
         HAL_GPIO_WritePin(motor->dirPort, motor->dirPin, CCW);
@@ -170,7 +171,6 @@ double MoveByAngle(Motor *motor, double angle, double speedRPM)
         angleToComplete = angleToComplete * -1;
     }
 
-    motor->isMoving = 1;
     if (motor->name == motor1.name)
     {
         __HAL_TIM_SET_AUTORELOAD(&htim3, timerPeriod);
@@ -410,8 +410,8 @@ void HomeMotors(void)
 
     // Move back 6 degrees
     double distZ = MoveByDist(&motorz, 2.0, 5);
-    double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
-    double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
+    double theta1 = MoveByAngle(&motor1, -10.0 / 180.0 * M_PI, 1);
+    double theta2 = MoveByAngle(&motor2, -10.0 / 180.0 * M_PI, 1);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
