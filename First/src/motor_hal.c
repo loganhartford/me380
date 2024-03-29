@@ -221,9 +221,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
         motor->currentRPM = MIN_RPM;
     }
 
-    float timePerStep = 60.0 / (motor->currentRPM * Z_STEPS_PER_REV); // Time per step in seconds
-    // !!!!!! THE NEXT LINE IS WRONG BUT IT WORKS RIGHT NOW !!!!!!!
-    // float timePerStep = 60.0 / (speedRPM * Z_STEPS_PER_REV);            // Time per step in seconds
+    float timePerStep = 60.0 / (motor->currentRPM * Z_STEPS_PER_REV);   // Time per step in seconds
     uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
     motor->isMoving = 1;
 
@@ -262,7 +260,7 @@ void StepMotor(Motor *motor)
         motor->isMoving = 0;
     }
 
-    // Don't want to gain schedule when in manual mode
+    // Don't want to gain schedule when in manual mode (except on Z)
     if (!state.manual)
     {
         if (motor->stepsToComplete > motor->stepsToSpeedUp)
@@ -397,7 +395,6 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     gripperClose(&gripper);
-    HAL_Delay(1000);
     MoveByDist(&motorz, -1000, 25);
     MoveByAngle(&motor1, 200, 5);
     MoveByAngle(&motor2, 200, 5);

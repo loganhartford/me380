@@ -324,12 +324,12 @@ void Manual_Mode(void)
         // Only send a new move command if deisred z pos is different from currentZ
         if (fabs(zPot.pos - state.currentZ) > 5.0)
         {
-            MoveToZ(zPot.pos, 10.0);
+            MoveToZ(zPot.pos, 15.0);
         }
 
         // Determine speed
-        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0; // Maps pot range from 5-20 RPM
-        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * 15.0 + 5.0; // Maps pot range from 5-20 RPM
+        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * 45.0 + 1.0; // Maps pot range from 5-20 RPM
+        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * 45.0 + 1.0; // Maps pot range from 5-20 RPM
         double speed;
         // For simplicity, just take th higher speed as the overall speed
         if (xSpeed > ySpeed)
@@ -340,6 +340,7 @@ void Manual_Mode(void)
         {
             speed = ySpeed;
         }
+        // PrintCaresianCoords(speed, speed);
 
         // Determine desired motion in X-Y
         double x, y = 0;

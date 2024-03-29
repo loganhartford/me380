@@ -4,7 +4,7 @@
 #include "main.h"
 #include <string.h>
 
-#define POT_THRESH 500.0
+#define POT_THRESH 100.0
 #define X_Y_DELTA 2.0
 
 typedef struct

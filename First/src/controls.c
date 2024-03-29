@@ -260,7 +260,7 @@ void MoveTo(double x, double y, double rpm)
         printf("Invalid Request\n\r");
         return;
     }
-    
+
     double delta1 = CalculateQuickestValidPath(state.theta1, best[0], &motor1);
     double delta2 = CalculateQuickestValidPath(state.theta2, best[1], &motor2);
 
