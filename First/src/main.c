@@ -8,6 +8,9 @@
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
 
+// #define REPEATABILITY // For repeatability study
+#define PRINT_HMI // For testing the HMI reads
+
 UART_HandleTypeDef UartHandle;
 UART_HandleTypeDef huart2;
 
@@ -43,6 +46,20 @@ int main(void)
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
 
+#ifdef REPEATABILITY
+  // Home and then run the test forever
+  while (1)
+  {
+    HomeMotors();
+    HAL_Delay(1000);
+    updateStateMachine("Auto Move");
+    performTest();
+    updateStateMachine("Auto Wait");
+    HAL_Delay(1000);
+  }
+#endif
+
+#ifdef PRINT_HMI
   // Double check the maping and polarity of potentiometers
   while (1)
   {
@@ -54,22 +71,23 @@ int main(void)
     PrintCaresianCoords(xPot.value, xPot.filtered);
     printf("yPot (value, filtered):");
     PrintCaresianCoords(yPot.value, yPot.filtered);
-    printf("zPot (zPos, filtered):");
-    PrintCaresianCoords(zPot.pos, zPot.filtered);
+    // printf("zPot (zPos, filtered):");
+    // PrintCaresianCoords(zPot.pos, zPot.filtered);
 
     GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
-    if (gripButtonState)
-    {
-      printf("Switch is high\r\n");
-    }
-    else
-    {
-      printf("Switch is low\r\n");
-    }
+    // if (gripButtonState)
+    // {
+    //   printf("Switch is high\r\n");
+    // }
+    // else
+    // {
+    //   printf("Switch is low\r\n");
+    // }
     printf("\r\n");
 
-    HAL_Delay(100); // Example delay, adjust as needed
+    HAL_Delay(1000); // Example delay, adjust as needed
   }
+#endif
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
@@ -78,6 +96,11 @@ int main(void)
 
   // Home the robot
   HomeMotors();
+
+  // // For testing the z motor in full step, delete later
+  // while(1) {
+
+  // }
 
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)

@@ -74,7 +74,7 @@ buttonLED autoManButton =
         .speed = GPIO_SPEED_FREQ_LOW,
 };
 
-Pot xPot =
+Pot yPot =
     {
         .name = "xPot",
         .port = GPIOA,
@@ -83,7 +83,7 @@ Pot xPot =
         .pull = GPIO_NOPULL,
         .channel = ADC_CHANNEL_4};
 
-Pot yPot =
+Pot xPot =
     {
         .name = "yPot",
         .port = GPIOA,
@@ -167,7 +167,7 @@ void HMI_Init(void)
     Pot_Init(&zPot);
     ADC_Init();
 
-    zPot.max = 860;
+    zPot.max = 725;
     zPot.min = 5;
     zPot.slope = ((motorz.thetaMax - Z_SAFETY_MARGIN) - (motorz.thetaMin + Z_SAFETY_MARGIN)) / (zPot.max - zPot.min);
     zPot.b = (motorz.thetaMax - Z_SAFETY_MARGIN) - (zPot.slope * zPot.max);
@@ -267,7 +267,7 @@ void readAndFilter(Pot *pot)
         // Calculate Z Pos
         if (pot->name == zPot.name)
         {
-            zPot.pos = (zPot.slope * zPot.filtered + zPot.b);
+            zPot.pos = motorz.thetaMax - (zPot.slope * zPot.filtered + zPot.b);
         }
     }
 }
