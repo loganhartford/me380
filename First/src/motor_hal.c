@@ -214,6 +214,7 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     // If we are in manual, set speed to desired speed right away
     if (state.manual)
     {
+        printf("manual");
         motor->currentRPM = speedRPM;
     }
     else
