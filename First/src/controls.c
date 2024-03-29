@@ -242,7 +242,10 @@ void MoveTo(double x, double y, double rpm)
     else
     {
         // Blink status LED
-        printf("Invalid Request\n\r");
+        HAL_GPIO_WritePin(redLED.port, redLED.pin, 1);
+        HAL_Delay(20);
+        HAL_GPIO_WritePin(redLED.port, redLED.pin, 0);
+        printf("Invalid X-Y Request\n\r");
         return;
     }
 
@@ -303,7 +306,10 @@ void MoveToZ(double z, double rpm)
     // Check if z coord is within limits
     if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0)) // Neet to fix this once we mak it taller
     {
-        printf("Invalid Request\n\r");
+        HAL_GPIO_WritePin(redLED.port, redLED.pin, 1);
+        HAL_Delay(20);
+        HAL_GPIO_WritePin(redLED.port, redLED.pin, 0);
+        printf("Invalid Z Request\n\r");
         return;
     }
     else

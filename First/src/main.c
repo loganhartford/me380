@@ -459,7 +459,6 @@ void Manual_Mode(void)
     {
       gripButton.latched = 0;
     }
-    PrintCaresianCoords(zPot.pos, zPot.value);
     // Only send a new move command if deisred z pos is different from currentZ
     if (fabs(zPot.pos - state.currentZ) > 5.0)
     {
