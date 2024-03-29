@@ -362,7 +362,7 @@ void performTest(void)
   // double xStart = 0, yStart = 202.5, xEnd = 175, yEnd = -122.5, zUp = 2, zDown = 88;
   // What actually gets us there
   double xStart = -4, yStart = 198, zUp = 5;
-  double xEnd = 160, yEnd = -120, zDown = 90;
+  double xEnd = 160, yEnd = -120, zDown = 95;
 
   // Moving to Start Location (M1 & M2 Active)
   printf("Moving to start\n\r");
@@ -459,7 +459,7 @@ void Manual_Mode(void)
     {
       gripButton.latched = 0;
     }
-
+    PrintCaresianCoords(zPot.pos, zPot.value);
     // Only send a new move command if deisred z pos is different from currentZ
     if (fabs(zPot.pos - state.currentZ) > 5.0)
     {

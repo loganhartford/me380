@@ -23,7 +23,7 @@ typedef struct
     GPIO_TypeDef *dirPort;    // Port for the direction
     uint16_t dirPin;          // Pin to set direction
     bool dir;                 // Motor direction
-    int reduction;            // Gear reduction of the motor
+    double reduction;            // Gear reduction of the motor
     double thetaMax;          // Positive limit switch position
     double thetaMin;          // Negative limit switch position
     uint32_t stepsToComplete; // Number of steps the motor has left to complete
