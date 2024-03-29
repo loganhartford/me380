@@ -263,6 +263,12 @@ void readAndFilter(Pot *pot)
     {
         // Low pass filter
         pot->filtered = pot->filtered + (((pot->value - pot->filtered) * pot->alpha));
+
+        // Calculate Z Pos
+        if (pot->name == zPot.name)
+        {
+            zPot.pos = (zPot.slope * zPot.filtered + zPot.b);
+        }
     }
 }
 

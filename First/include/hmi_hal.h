@@ -33,6 +33,7 @@ typedef struct
     double b;
     double alpha;
     double filtered;
+    double pos;
 } Pot;
 
 // typedef struct // UPDATE W/ ABOVE

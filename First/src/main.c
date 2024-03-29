@@ -50,11 +50,12 @@ int main(void)
     readAndFilter(&yPot);
     readAndFilter(&zPot);
 
-    printf("xPot %f\r\n", xPot.filtered);
-    printf("yPot: %f\r\n", yPot.filtered);
-    printf("zPot: %f\r\n", zPot.filtered);
-    double zPos = zPot.slope * zPot.filtered + zPot.b;
-    printf("zPos: %f\r\n", zPos);
+    printf("xPot (value, filtered):");
+    PrintCaresianCoords(xPot.value, xPot.filtered);
+    printf("yPot (value, filtered):");
+    PrintCaresianCoords(yPot.value, yPot.filtered);
+    printf("zPot (zPos, filtered):");
+    PrintCaresianCoords(zPot.pos, zPot.filtered);
 
     GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
     if (gripButtonState)
@@ -67,7 +68,7 @@ int main(void)
     }
     printf("\r\n");
 
-    HAL_Delay(1000); // Example delay, adjust as needed
+    HAL_Delay(100); // Example delay, adjust as needed
   }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
