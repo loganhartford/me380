@@ -9,7 +9,7 @@
 #define STEPS_PER_REV 6400.0
 #define MIN_RPM 5.0
 #define MAX_RPM 20.0
-#define Z_STEPS_PER_REV 8192.0
+#define Z_STEPS_PER_REV 4096.0 // Full stepping
 #define Z_MM_PER_REV (15.0 * M_PI)
 
 #define CW 0
