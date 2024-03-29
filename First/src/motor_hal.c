@@ -214,7 +214,6 @@ double MoveByDist(Motor *motor, double dist, double speedRPM)
     // If we are in manual, set speed to desired speed right away
     if (state.manual)
     {
-        printf("manual");
         motor->currentRPM = speedRPM;
     }
     else
@@ -291,10 +290,9 @@ void StepMotor(Motor *motor)
         {
             __HAL_TIM_SET_AUTORELOAD(&htim7, timerPeriod);
         }
-
-        HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
-        motor->stepsToComplete--;
     }
+    HAL_GPIO_TogglePin(motor->stepPort, motor->stepPin);
+    motor->stepsToComplete--;
 }
 
 static void TIM3_Init(void)

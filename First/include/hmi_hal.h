@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define POT_THRESH 500.0
+#define X_Y_DELTA 2.0
 
 typedef struct
 {
@@ -35,18 +36,6 @@ typedef struct
     double filtered;
     double pos;
 } Pot;
-
-// typedef struct // UPDATE W/ ABOVE
-// {
-//     const char *name;
-//     GPIO_TypeDef *port;
-//     uint16_t Pin_grip;
-//     GPIO_PinState Pin_grip_state;
-//     uint16_t Pin_x;
-//     // uint32_t Pin_x_pos;
-//     uint16_t Pin_y;
-//     // uint32_t Pin_y_pos;
-// } joystick;
 
 extern buttonLED greenLED;
 extern buttonLED redLED;

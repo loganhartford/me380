@@ -314,10 +314,6 @@ void MoveTo(double x, double y, double rpm)
 
 void MoveToZ(double z, double rpm)
 {
-    int int_part2 = (int)state.currentZ;
-    int decimal_part2 = abs((int)((state.currentZ - int_part2) * 100)); // 2 decimal places
-    printf("Existing Z in State Machine: (%d.%d)\n\r", int_part2, decimal_part2);
-
     // Check if z coord is within limits
     if ((z > motorz.thetaMax - 5.0) || (z < motorz.thetaMin + 5.0)) // Neet to fix this once we mak it taller
     {
@@ -337,15 +333,9 @@ void MoveToZ(double z, double rpm)
             deltaZ = deltaZ * -1;
             mdeltaZ = MoveByDist(&motorz, deltaZ, rpm);
         }
+        printf("Moving (to, from):");
+        PrintCaresianCoords(z, state.currentZ);
         state.currentZ += mdeltaZ;
-
-        int int_part1 = (int)mdeltaZ;
-        int decimal_part1 = abs((int)((mdeltaZ - int_part1) * 100)); // 2 decimal places
-        printf("Current Motor_Delta: (%d.%d)\n\r", int_part1, decimal_part1);
-
-        int int_part = (int)state.currentZ;
-        int decimal_part = abs((int)((state.currentZ - int_part) * 100)); // 2 decimal places
-        printf("Updated Z in State Machine: (%d.%d)\n\r", int_part, decimal_part);
     }
 }
 

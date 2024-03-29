@@ -167,14 +167,14 @@ void HMI_Init(void)
     Pot_Init(&zPot);
     ADC_Init();
 
-    zPot.max = 725;
+    zPot.max = 550;
     zPot.min = 5;
     zPot.slope = ((motorz.thetaMax - Z_SAFETY_MARGIN) - (motorz.thetaMin + Z_SAFETY_MARGIN)) / (zPot.max - zPot.min);
     zPot.b = (motorz.thetaMax - Z_SAFETY_MARGIN) - (zPot.slope * zPot.max);
 
-    xPot.value = Read_Pot(&xPot);
-    yPot.value = Read_Pot(&yPot);
-    zPot.value = Read_Pot(&zPot);
+    readAndFilter(&xPot);
+    readAndFilter(&yPot);
+    readAndFilter(&zPot);
 }
 
 /**
@@ -222,7 +222,8 @@ void ADC_Select_Channel(uint32_t channel)
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.Channel = channel;
     sConfig.Rank = 1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    // Increase the sampling time to ADC_SAMPLETIME_15CYCLES, 28CYCLES, 56CYCLES, or more depending on your need
+    sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES; // Example: Increase to 56 cycles
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
         ErrorHandler();
@@ -238,6 +239,8 @@ void ADC_Select_Channel(uint32_t channel)
 uint32_t Read_Pot(Pot *pot)
 {
     ADC_Select_Channel(pot->channel); // Select the channel before reading
+
+    HAL_Delay(1); // Introduce a 1ms delay to allow ADC input stabilization
 
     HAL_ADC_Start(&hadc1);
     if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
@@ -267,7 +270,18 @@ void readAndFilter(Pot *pot)
         // Calculate Z Pos
         if (pot->name == zPot.name)
         {
+            // Determine desired Z position
             zPot.pos = motorz.thetaMax - (zPot.slope * zPot.filtered + zPot.b);
+
+            // Ensure desired position is within limits
+            if (zPot.pos > (motorz.thetaMax - Z_SAFETY_MARGIN))
+            {
+                zPot.pos = (motorz.thetaMax - Z_SAFETY_MARGIN) - 1;
+            }
+            else if (zPot.pos < (motorz.thetaMin + Z_SAFETY_MARGIN))
+            {
+                zPot.pos = (motorz.thetaMin + Z_SAFETY_MARGIN) + 1;
+            }
         }
     }
 }
@@ -307,25 +321,12 @@ void Manual_Mode(void)
             gripButton.latched = 0;
         }
 
-        // Determine desired Z position
-        double zPos = zPot.slope * zPot.filtered + zPot.b;
-
-        // Ensure desired position is within limits
-        if (zPos > (motorz.thetaMax - Z_SAFETY_MARGIN))
-        {
-            zPos = (motorz.thetaMax - Z_SAFETY_MARGIN) - 1;
-        }
-        else if (zPos < (motorz.thetaMin + Z_SAFETY_MARGIN))
-        {
-            zPos = (motorz.thetaMin + Z_SAFETY_MARGIN) + 1;
-        }
-
         // Only send a new move command if deisred z pos is different from currentZ
-        if (fabs(zPos - state.currentZ) > 1.0)
+        if (fabs(zPot.pos - state.currentZ) > 1.0)
         {
             printf("Moving Z (From, To): ");
-            PrintCaresianCoords(state.currentZ, zPos);
-            MoveToZ(zPos, 10.0);
+            PrintCaresianCoords(state.currentZ, zPot.pos);
+            MoveToZ(zPot.pos, 10.0);
         }
 
         // Determine speed
@@ -346,11 +347,11 @@ void Manual_Mode(void)
         double x, y = 0;
         if ((xPot.value - 2048.0) > POT_THRESH)
         {
-            x = 1.0;
+            x = X_Y_DELTA;
         }
         else if ((xPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            x = -1.0;
+            x = -1*X_Y_DELTA;
         }
         else
         {
@@ -358,11 +359,11 @@ void Manual_Mode(void)
         }
         if ((yPot.value - 2048.0) > POT_THRESH)
         {
-            y = 1.0;
+            y = X_Y_DELTA;
         }
         else if ((yPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            y = -1.0;
+            y = -1*X_Y_DELTA;
         }
         else
         {
@@ -382,7 +383,11 @@ void Manual_Mode(void)
         {
             while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
             {
-                HAL_Delay(1);
+                // Read user inputs
+                readAndFilter(&xPot);
+                readAndFilter(&yPot);
+                readAndFilter(&zPot);
+                HAL_Delay(20);
             }
         }
         else // if nothing is happening, delay the loop

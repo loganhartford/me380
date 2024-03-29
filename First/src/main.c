@@ -97,12 +97,6 @@ int main(void)
   // Home the robot
   HomeMotors();
 
-  // For testing the z motor in full step, delete later
-  while (1)
-  {
-    DevSerialDemo();
-  }
-
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
   {
@@ -114,11 +108,7 @@ int main(void)
     }
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
     {
-      printf("Switched to Manual Mode (Serial Demo)\n\r");
-
-      // Set z motor to slider position
-      double zPos = zPot.slope * zPot.value + zPot.b;
-      MoveToZ(zPos, 35.0);
+      printf("Switched to Manual Mode\n\r");
       HAL_Delay(500); // So button isn't "double-pressed"
       while (motorz.isMoving)
       {
@@ -313,7 +303,7 @@ void SerialDemo(void)
       printf("Moving to: ");
       PrintCaresianCoords(x, y);
       MoveTo(x, y, 10.0);
-      MoveToZ(z, 35.0);
+      MoveToZ(z, 15.0);
       printf("\n\r");
     }
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
@@ -374,7 +364,7 @@ void performTest(void)
   // Moving to Start Location (M1 & M2 Active)
   printf("Moving to start\n\r");
   MoveTo(xStart, yStart, 10.0);
-  MoveToZ(zDown, 25.0);
+  MoveToZ(zDown, 15.0);
   HAL_Delay(1500);
   gripperOpen(&gripper);
   while (motor1.isMoving || motor2.isMoving)
@@ -393,7 +383,7 @@ void performTest(void)
   gripperClose(&gripper);
   HAL_Delay(1000);
   // Moving Rack Back Up (MZ Active)
-  MoveToZ(zUp, 25.0);
+  MoveToZ(zUp, 15.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
@@ -409,7 +399,7 @@ void performTest(void)
   }
 
   // Moving Rack Down (MZ Active)
-  MoveToZ(zUp + 15, 25.0);
+  MoveToZ(zUp + 15, 15.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
