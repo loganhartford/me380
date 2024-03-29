@@ -407,8 +407,8 @@ void HomeMotors(void)
 
     // Move back 6 degrees
     double distZ = MoveByDist(&motorz, 2.0, 5);
-    double theta1 = MoveByAngle(&motor1, -10.0 / 180.0 * M_PI, 1);
-    double theta2 = MoveByAngle(&motor2, -10.0 / 180.0 * M_PI, 1);
+    double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
+    double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {

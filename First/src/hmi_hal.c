@@ -328,8 +328,8 @@ void Manual_Mode(void)
         }
 
         // Determine speed
-        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * 45.0 + 1.0; // Maps pot range from 5-20 RPM
-        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * 45.0 + 1.0; // Maps pot range from 5-20 RPM
+        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 5-20 RPM
+        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 5-20 RPM
         double speed;
         // For simplicity, just take th higher speed as the overall speed
         if (xSpeed > ySpeed)
@@ -341,16 +341,19 @@ void Manual_Mode(void)
             speed = ySpeed;
         }
         // PrintCaresianCoords(speed, speed);
+        // speed = 15.0;
 
         // Determine desired motion in X-Y
         double x, y = 0;
+        double min = 0;
+        double gain = 5.0;
         if ((xPot.value - 2048.0) > POT_THRESH)
         {
-            x = X_Y_DELTA;
+            x = (xPot.value - 2048.0)/2048.0 * gain + min;
         }
         else if ((xPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            x = -1*X_Y_DELTA;
+            x = (xPot.value - 2048.0)/2048.0 * gain - min;
         }
         else
         {
@@ -358,17 +361,17 @@ void Manual_Mode(void)
         }
         if ((yPot.value - 2048.0) > POT_THRESH)
         {
-            y = X_Y_DELTA;
+            y = (yPot.value - 2048.0)/2048.0 * gain + min;;
         }
         else if ((yPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            y = -1*X_Y_DELTA;
+            y = (yPot.value - 2048.0)/2048.0 * gain - min;;
         }
         else
         {
             y = 0.0;
         }
-
+        // PrintCaresianCoords(x,y);
         // Send X-Y move command if either are non-zero
         if (x || y)
         {

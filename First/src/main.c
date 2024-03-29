@@ -8,7 +8,7 @@
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
 
-// #define REPEATABILITY // For repeatability study
+#define REPEATABILITY // For repeatability study
 // #define PRINT_HMI // For testing the HMI reads
 
 UART_HandleTypeDef UartHandle;
@@ -45,6 +45,10 @@ int main(void)
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
+  while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
+  {
+    HAL_Delay(1);
+  }
 
 #ifdef REPEATABILITY
   // Home and then run the test forever
@@ -88,11 +92,6 @@ int main(void)
     HAL_Delay(1000); // Example delay, adjust as needed
   }
 #endif
-
-  while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
-  {
-    HAL_Delay(1);
-  }
 
   // Home the robot
   HomeMotors();
@@ -379,17 +378,17 @@ void performTest(void)
     HAL_Delay(1);
   }
   // gripper should actuate here
-  HAL_Delay(1000);
+  HAL_Delay(300);
 
   gripperClose(&gripper);
-  HAL_Delay(1000);
+  HAL_Delay(300);
   // Moving Rack Back Up (MZ Active)
   MoveToZ(zUp, 15.0);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
   }
-  HAL_Delay(1000);
+  HAL_Delay(300);
 
   // Moving to End Location (M1 & M2 Active)
   printf("Moving to End\n\r");
@@ -406,9 +405,9 @@ void performTest(void)
     HAL_Delay(1);
   }
 
-  HAL_Delay(1000);
+  HAL_Delay(500);
   gripperOpen(&gripper);
-  HAL_Delay(1000);
+  HAL_Delay(500);
 
   // Move of the dice
   MoveTo(xEnd + 70, yEnd, 10.0);
