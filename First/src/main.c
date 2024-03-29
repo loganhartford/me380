@@ -8,7 +8,7 @@
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
 
-#define REPEATABILITY // For repeatability study
+// #define REPEATABILITY // For repeatability study
 // #define PRINT_HMI // For testing the HMI reads
 
 UART_HandleTypeDef UartHandle;
@@ -108,7 +108,10 @@ int main(void)
     else if (HAL_GPIO_ReadPin(autoManButton.port, autoManButton.pin) == GPIO_PIN_RESET)
     {
       printf("Switched to Manual Mode\n\r");
-      MoveTo(-150.0, 150.0, 5.0);
+      if (!state.testHasRun)
+      {
+        MoveTo(-150.0, 150.0, 5.0);
+      }
       HAL_Delay(500); // So button isn't "double-pressed"
       while (motor1.isMoving || motor2.isMoving)
       {
@@ -353,8 +356,7 @@ void DevSerialDemo(void)
  */
 void performTest(void)
 {
-  HAL_Delay(1000);
-
+  state.testHasRun = 1;
   // What is should be
   // double xStart = 0, yStart = 202.5, xEnd = 175, yEnd = -122.5, zUp = 2, zDown = 88;
   // What actually gets us there

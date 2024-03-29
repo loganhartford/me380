@@ -8,13 +8,10 @@ ADC_HandleTypeDef hadc1;
 void HMI_Init(void);
 static void TIM5_Init(void);
 void TIM5_IRQHandler(void);
-// void changeLEDState(buttonLED butLED, const char *ledMode);
 void buttonDebug(void);
 void Pot_Init(Pot *pot);
 void ADC_Init(void);
 void ADC_Select_Channel(uint32_t channel);
-
-//   More function prototypes
 
 buttonLED greenLED =
     {
@@ -222,8 +219,7 @@ void ADC_Select_Channel(uint32_t channel)
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.Channel = channel;
     sConfig.Rank = 1;
-    // Increase the sampling time to ADC_SAMPLETIME_15CYCLES, 28CYCLES, 56CYCLES, or more depending on your need
-    sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES; // Example: Increase to 56 cycles
+    sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
         ErrorHandler();
@@ -238,9 +234,8 @@ void ADC_Select_Channel(uint32_t channel)
  */
 uint32_t Read_Pot(Pot *pot)
 {
-    ADC_Select_Channel(pot->channel); // Select the channel before reading
-
-    HAL_Delay(1); // Introduce a 1ms delay to allow ADC input stabilization
+    ADC_Select_Channel(pot->channel);
+    HAL_Delay(1);
 
     HAL_ADC_Start(&hadc1);
     if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
@@ -328,8 +323,8 @@ void Manual_Mode(void)
         }
 
         // Determine speed
-        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 5-20 RPM
-        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 5-20 RPM
+        double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 1-20 RPM
+        double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 1-20 RPM
         double speed;
         // For simplicity, just take th higher speed as the overall speed
         if (xSpeed > ySpeed)
@@ -340,8 +335,6 @@ void Manual_Mode(void)
         {
             speed = ySpeed;
         }
-        // PrintCaresianCoords(speed, speed);
-        // speed = 15.0;
 
         // Determine desired motion in X-Y
         double x, y = 0;
@@ -349,11 +342,11 @@ void Manual_Mode(void)
         double gain = 5.0;
         if ((xPot.value - 2048.0) > POT_THRESH)
         {
-            x = (xPot.value - 2048.0)/2048.0 * gain + min;
+            x = (xPot.value - 2048.0) / 2048.0 * gain + min;
         }
         else if ((xPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            x = (xPot.value - 2048.0)/2048.0 * gain - min;
+            x = (xPot.value - 2048.0) / 2048.0 * gain - min;
         }
         else
         {
@@ -361,17 +354,19 @@ void Manual_Mode(void)
         }
         if ((yPot.value - 2048.0) > POT_THRESH)
         {
-            y = (yPot.value - 2048.0)/2048.0 * gain + min;;
+            y = (yPot.value - 2048.0) / 2048.0 * gain + min;
+            ;
         }
         else if ((yPot.value - 2048.0) < (POT_THRESH * -1))
         {
-            y = (yPot.value - 2048.0)/2048.0 * gain - min;;
+            y = (yPot.value - 2048.0) / 2048.0 * gain - min;
+            ;
         }
         else
         {
             y = 0.0;
         }
-        // PrintCaresianCoords(x,y);
+
         // Send X-Y move command if either are non-zero
         if (x || y)
         {

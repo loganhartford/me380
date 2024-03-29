@@ -20,11 +20,9 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
 {
     // Calculate length of end effector vector
     double R = sqrt(x * x + y * y);
-    // printf("Current R: %d.%d\n\r", (int)(R), abs((int)((R - (int)(R)) * 100)));
 
     // Angle of vector using atan2 to handle quadrants
     double THETA = atan2(y, x);
-    // printf("Current THETA: %d.%d\n\r", (int)(THETA), abs((int)((THETA - (int)(THETA)) * 100)));
 
     // Handle the limits of acos
     double acosarg = (R * R - LINK_1 * LINK_1 - LINK_2 * LINK_2) / (-2 * LINK_1 * LINK_2);
@@ -41,7 +39,6 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         beta = acos(acosarg);
     }
-    // printf("Current beta: %d.%d\n\r", (int)(beta), abs((int)((beta - (int)(beta)) * 100)));
 
     double alpha;
     double break_r = sqrt(LINK_2 * LINK_2 - LINK_1 * LINK_1);
@@ -57,8 +54,6 @@ void CalculateJointAngle(double x, double y, double solns[2][2])
     {
         alpha = 0.0;
     }
-
-    // printf("Current alpha: %d.%d\n\r", (int)alpha, abs((int)((alpha - (int)alpha) * 1000)));
 
     // Assembly both possible solutions [theta1, theta2]
     solns[0][0] = THETA - alpha;
@@ -96,7 +91,6 @@ void PrintState()
     printf("Homing: %s\n\r", state.homing ? "Yes" : "No");
     printf("Manual: %s\n\r", state.manual ? "Yes" : "No");
     printf("Test Running: %s\n\r", state.testRunning ? "Yes" : "No");
-    // printf("Grasping: %s\n\r", state.grasping ? "Yes" : "No");
     printf("Current Angles in degrees:");
     PrintAnglesInDegrees(state.theta1, state.theta2);
     printf("Current Coords in x-y:");
@@ -219,9 +213,6 @@ void MoveTo(double x, double y, double rpm)
     bool soln1_valid = IsValid(solns[0]);
     bool soln2_valid = IsValid(solns[1]);
 
-    // bool soln1_valid = true;
-    // bool soln2_valid = false;
-
     double *best;
     // If both solutions are valid, take the quicker one
     if (soln1_valid && soln2_valid)
@@ -237,12 +228,6 @@ void MoveTo(double x, double y, double rpm)
         {
             best = solns[1];
         }
-        /*
-        Note:
-            - This is not the best way to do this
-            - When we caculate the delta_sum, we are not taking into account the inability to move through the restricted angle range.
-            - This could result in taking the less ideal solution
-        */
     }
     // If only one solution is valid, take that one
     else if (soln1_valid)
@@ -366,6 +351,7 @@ void updateStateMachine(const char *toState)
         state.homing = 0;
         state.manual = 0;
         state.testRunning = 0;
+        state.testHasRun = 0;
         changeLEDState(redLED, "Solid");
     }
     else if (strcmp(toState, "Homing") == 0)

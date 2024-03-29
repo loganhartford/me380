@@ -24,6 +24,7 @@ struct stateMachine
     bool homing;      // Is the robot currently homing
     bool manual;      // Is the robot currently in manual mode (As opposed to automatic)
     bool testRunning; // Is the robot running the test (in auto)
+    bool testHasRun;
 
     bool grasping;   // Is the robot grasping and object
     double theta1;   // Link 1 angle
