@@ -10,6 +10,7 @@
 
 // #define REPEATABILITY // For repeatability study
 // #define PRINT_HMI // For testing the HMI reads
+#define IK_VAL
 
 UART_HandleTypeDef UartHandle;
 UART_HandleTypeDef huart2;
@@ -96,6 +97,14 @@ int main(void)
 
   // Home the robot
   HomeMotors();
+
+#ifdef IK_VAL
+  // Run serial demo to manually send the robot around to test the IK
+  while (1)
+  {
+    DevSerialDemo();
+  }
+#endif
 
   // Default to auto-wait, where user can either perform the test or switch to manual
   while (1)
@@ -328,10 +337,10 @@ void SerialDemo(void)
  */
 void DevRecieveCoordinates(double *x, double *y, double *z)
 {
-  // printf("Enter in desired X coordinate: \n\r");
-  // *x = ReceiveFloat();
-  // printf("Enter in desired Y corrdinate: \n\r");
-  // *y = ReceiveFloat();
+  printf("Enter in desired X coordinate: \n\r");
+  *x = ReceiveFloat();
+  printf("Enter in desired Y corrdinate: \n\r");
+  *y = ReceiveFloat();
   printf("Enter in desired Z coordinate: \n\r");
   *z = ReceiveFloat();
 }
@@ -344,9 +353,9 @@ void DevSerialDemo(void)
 {
   double x, y, z;
   DevRecieveCoordinates(&x, &y, &z);
-  // printf("Moving to: ");
-  // PrintCaresianCoords(x, y);
-  // MoveTo(x, y, 10.0);
+  printf("Moving to: ");
+  PrintCaresianCoords(x, y);
+  MoveTo(x, y, 15.0);
   MoveToZ(z, 15.0);
   printf("\n\r");
 }
