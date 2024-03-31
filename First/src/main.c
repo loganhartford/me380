@@ -42,32 +42,39 @@ int main(void)
 
   // Wait for the home button to be pushed
   printf("Waiting to home...\n\r");
-
-  while (1)
-  {
-    uint32_t xPotValue = Read_Pot(&xPot);
-    printf("xPot %lu\r\n", xPotValue);
-    // HAL_Delay(500);
-
-    uint32_t yPotValue = Read_Pot(&yPot);
-    printf("yPot: %lu\r\n", yPotValue);
-
-    uint32_t zPotValue = Read_Pot(&zPot);
-    printf("zPot: %lu\r\n", zPotValue);
-
-    GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
-    if (gripButtonState)
-    {
-      printf("Switch is high\r\n");
-    }
-    else
-    {
-      printf("Switch is low\r\n");
-    }
-    printf("\r\n");
-
-    HAL_Delay(1000); // Example delay, adjust as needed
+  while (1) {
+    gripperClose(&gripper);
+    HAL_Delay(500);
+    gripperOpen(&gripper);
+    HAL_Delay(500);
   }
+
+  // gripperClose(&gripper);
+  // while (1)
+  // {
+  //   uint32_t xPotValue = Read_Pot(&xPot);
+  //   printf("xPot %lu\r\n", xPotValue);
+  //   // HAL_Delay(500);
+
+  //   uint32_t yPotValue = Read_Pot(&yPot);
+  //   printf("yPot: %lu\r\n", yPotValue);
+
+  //   uint32_t zPotValue = Read_Pot(&zPot);
+  //   printf("zPot: %lu\r\n", zPotValue);
+
+  //   GPIO_PinState gripButtonState = HAL_GPIO_ReadPin(gripButton.port, gripButton.pin);
+  //   if (gripButtonState)
+  //   {
+  //     printf("Switch is high\r\n");
+  //   }
+  //   else
+  //   {
+  //     printf("Switch is low\r\n");
+  //   }
+  //   printf("\r\n");
+
+  //   HAL_Delay(1000); // Example delay, adjust as needed
+  // }
 
   while (HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
   {
