@@ -34,4 +34,11 @@ void ErrorHandler(void);
 // servo stuff
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
+// !!! DEVELOPMENT VERSIONS !!! //
+// #define REPEATABILITY // For repeatability study
+// #define PRINT_HMI // For testing the HMI reads
+// #define IK_VAL
+// #define GRIPPER_TEST
+// #define REVERSE
+
 #endif /* __MAIN_H */

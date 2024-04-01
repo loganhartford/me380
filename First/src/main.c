@@ -8,13 +8,6 @@
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
 
-// !!! DEVELOPMENT VERSIONS !!! //
-// #define REPEATABILITY // For repeatability study
-// #define PRINT_HMI // For testing the HMI reads
-// #define IK_VAL
-// #define GRIPPER_TEST
-#define REVERSE
-
 UART_HandleTypeDef UartHandle;
 UART_HandleTypeDef huart2;
 
@@ -466,24 +459,25 @@ void performTest(void)
 
   HAL_Delay(300);
 
-  MoveTo(state.x + 10.0, state.y + 40.0, xy_speed);
+  MoveTo(state.x + 50.0, state.y + 50.0, xy_speed);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
-#endif
   // HAL_Delay(300);
-  // MoveTo(state.x - 60.0, state.y, xy_speed + 20.0);
+  // MoveTo(state.x - 50.0, state.y, xy_speed);
   // while (motor1.isMoving || motor2.isMoving)
   // {
   //   HAL_Delay(1);
   // }
   // HAL_Delay(100);
-  // MoveTo(state.x, state.y + 70, xy_speed);
+  // MoveTo(state.x - 50.0, state.y, xy_speed);
   // while (motor1.isMoving || motor2.isMoving)
   // {
   //   HAL_Delay(1);
   // }
+#endif
+  
 }
 
 void reverseTest(void)
@@ -637,6 +631,11 @@ void Manual_Mode(void)
     else // if nothing is happening, delay the loop
     {
       HAL_Delay(20);
+    }
+
+    if (!HAL_GPIO_ReadPin(homeButton.port, homeButton.pin))
+    {
+      HomeMotors();
     }
 
     // Return to automatic mode
