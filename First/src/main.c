@@ -8,9 +8,10 @@
 #define DEBUG                // Enables serial print statements
 #define INPUT_BUFFER_SIZE 32 // Serial reads
 
+// !!! DEVELOPMENT VERSIONS !!! //
 // #define REPEATABILITY // For repeatability study
 // #define PRINT_HMI // For testing the HMI reads
-#define IK_VAL
+// #define IK_VAL
 
 UART_HandleTypeDef UartHandle;
 UART_HandleTypeDef huart2;
@@ -41,7 +42,15 @@ int main(void)
   Limit_Switch_Init();
   HMI_Init();
 
+  // gripperClose(&gripper);
   updateStateMachine("Unhomed");
+  // while (1)
+  // {
+  //   gripperOpen(&gripper);
+  //   HAL_Delay(1000);
+  //   gripperClose(&gripper);
+  //   HAL_Delay(1000);
+  // }
 
   SystemHealthCheck();
 
@@ -355,7 +364,7 @@ void DevSerialDemo(void)
   DevRecieveCoordinates(&x, &y, &z);
   printf("Moving to: ");
   PrintCaresianCoords(x, y);
-  MoveTo(x, y, 15.0);
+  MoveTo(x, y, 5.0);
   MoveToZ(z, 15.0);
   printf("\n\r");
 }
@@ -367,71 +376,95 @@ void DevSerialDemo(void)
 void performTest(void)
 {
   state.testHasRun = 1;
-  // What is should be
-  // double xStart = 0, yStart = 202.5, xEnd = 175, yEnd = -122.5, zUp = 2, zDown = 88;
-  // What actually gets us there
-  double xStart = 0, yStart = 198, zUp = 5;
-  double xEnd = 160, yEnd = -120, zDown = 95;
 
-  // Moving to Start Location (M1 & M2 Active)
+  // Actual Test Coordinates:
+  // double xStart = -202.5, yStart = 0.0;
+  // double xEnd = 122.5, yEnd = 175.0;
+  // double zWood = 110.0, zPlatform = 20.0, zTravel = 5.0;
+
+  // Hacky Test Coordinates:
+  double xStart = -195.0, yStart = -50.0;
+  double xEnd = 105.0, yEnd = 200.0;
+  double zWood = 110.0, zPlatform = 30.0, zTravel = 5.0;
+
+  double xy_speed = 5.0, z_speed = 25.0;
+
   printf("Moving to start\n\r");
-  MoveTo(xStart, yStart, 10.0);
-  MoveToZ(zDown, 15.0);
+  MoveTo(xStart, yStart, xy_speed);
+  MoveToZ(zWood, z_speed);
+
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+
   HAL_Delay(1500);
   gripperOpen(&gripper);
-  while (motor1.isMoving || motor2.isMoving)
-  {
-    HAL_Delay(1);
-  }
-  // Moving Rack Down (MZ Active)
 
   while (motorz.isMoving)
   {
     HAL_Delay(1);
   }
-  // gripper should actuate here
-  HAL_Delay(300);
 
+  printf("Grabbing the dice.\r\n");
+  HAL_Delay(300);
   gripperClose(&gripper);
   HAL_Delay(300);
-  // Moving Rack Back Up (MZ Active)
-  MoveToZ(zUp, 15.0);
+
+  printf("Moving to end position\r\n");
+  MoveToZ(zTravel, z_speed);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
   }
+
   HAL_Delay(300);
 
-  // Moving to End Location (M1 & M2 Active)
-  printf("Moving to End\n\r");
-  MoveTo(xEnd, yEnd, 5.0);
+  MoveTo(xEnd, yEnd, xy_speed);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
 
-  // Moving Rack Down (MZ Active)
-  MoveToZ(zUp + 15, 15.0);
+  HAL_Delay(300);
+
+  MoveToZ(zPlatform, z_speed);
   while (motorz.isMoving)
   {
     HAL_Delay(1);
   }
 
+  printf("Releasing the die.\r\n");
   HAL_Delay(500);
   gripperOpen(&gripper);
   HAL_Delay(500);
 
-  // Move of the dice
-  MoveTo(xEnd + 70, yEnd, 10.0);
+  // Move off the dice
+  MoveToZ(zTravel, z_speed);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+
+  HAL_Delay(300);
+
+  MoveTo(state.x, state.y + 70.0, xy_speed);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
-  MoveTo(xEnd + 70, yEnd + 70, 10.0);
+  HAL_Delay(300);
+  MoveTo(state.x - 70.0, state.y, xy_speed);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
+  // HAL_Delay(100);
+  // MoveTo(state.x, state.y + 70, xy_speed);
+  // while (motor1.isMoving || motor2.isMoving)
+  // {
+  //   HAL_Delay(1);
+  // }
 }
 
 /**
@@ -471,12 +504,13 @@ void Manual_Mode(void)
     // Only send a new move command if deisred z pos is different from currentZ
     if (fabs(zPot.pos - state.currentZ) > 5.0)
     {
-      MoveToZ(zPot.pos, 15.0);
+      MoveToZ(zPot.pos, 25.0);
     }
 
     // Determine speed
-    double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 1-20 RPM
-    double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * MAX_RPM + 1.0; // Maps pot range from 1-20 RPM
+    double offset = 15.0;
+    double xSpeed = (fabs(xPot.filtered - 2048.0) / 2048.0) * (MAX_RPM - offset) + 1.0; // Maps pot range from 1-20 RPM
+    double ySpeed = (fabs(yPot.filtered - 2048.0) / 2048.0) * (MAX_RPM - offset) + 1.0; // Maps pot range from 1-20 RPM
     double speed;
     // For simplicity, just take th higher speed as the overall speed
     if (xSpeed > ySpeed)

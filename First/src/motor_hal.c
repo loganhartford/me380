@@ -2,6 +2,8 @@
 #include "controls.h"
 #include "limit_switch_hal.h"
 
+#define SG_90
+
 ADC_HandleTypeDef hadc1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -32,8 +34,8 @@ Motor motor1 = {
     .dirPin = GPIO_PIN_4,   // D5-PB4
     .dir = CCW,
     .reduction = 1,
-    .thetaMin = -164.0 / 180.0 * M_PI,
-    .thetaMax = 164.0 / 180.0 * M_PI,
+    .thetaMin = -160.0 / 180.0 * M_PI,
+    .thetaMax = 160.0 / 180.0 * M_PI,
     .isMoving = 0,
 };
 
@@ -45,9 +47,9 @@ Motor motor2 = {
     .dirPort = GPIOB,      // D6-PB10
     .dirPin = GPIO_PIN_10, // D6-PB10
     .dir = CCW,
-    .reduction = 1.3333,
-    .thetaMin = -110.0 / 180.0 * M_PI,
-    .thetaMax = 110.0 / 180.0 * M_PI,
+    .reduction = 2,
+    .thetaMin = -100.0 / 180.0 * M_PI,
+    .thetaMax = 100.0 / 180.0 * M_PI,
     .isMoving = 0,
 };
 
@@ -60,16 +62,27 @@ Motor motorz = {
     .dir = CCW,
     .reduction = 1,
     .thetaMin = 0,   // contacting bottom Limit SW
-    .thetaMax = 100, // contacting top limit SW
+    .thetaMax = 119, // contacting top limit SW
     .isMoving = 0,
 };
 
+#ifdef SG_90
 ServoMotor gripper = {
     .pwmPort = GPIOA,
     .pwmPin = GPIO_PIN_5,
-    .closedPosition = 2.2, // limit when gripper is closing
-    .openPosition = 8      // limit when gripper is open
+    .closedPosition = 2, // limit when gripper is closing
+    .openPosition = 5    // limit when gripper is open
+    // Change open and close for sg90
 };
+#else
+ServoMotor gripper = {
+    .pwmPort = GPIOA,
+    .pwmPin = GPIO_PIN_5,
+    .closedPosition = 8.5, // 2.2 // limit when gripper is closing
+    .openPosition = 11.5   // 10      // limit when gripper is open
+    // Change open and close for sg90
+};
+#endif
 
 /**
  * @brief Takes in a motor struct and initialized the associated pins.
@@ -273,8 +286,16 @@ void StepMotor(Motor *motor)
         }
 
         // Change the timer period based on the current rpm
-        float timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
-        uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1;                // Time per toggle, in microseconds
+        float timePerStep;
+        if (motor->name == motorz.name)
+        {
+            timePerStep = 60.0 / (motor->currentRPM * Z_STEPS_PER_REV * motor->reduction); // Time per step in seconds
+        }
+        else
+        {
+            timePerStep = 60.0 / (motor->currentRPM * STEPS_PER_REV * motor->reduction); // Time per step in seconds
+        }
+        uint32_t timerPeriod = (uint32_t)((timePerStep * 1000000) / 2) - 1; // Time per toggle, in microseconds
         // Set the new timer period
         if (motor->name == motor1.name)
         {
@@ -395,9 +416,9 @@ void HomeMotors(void)
     updateStateMachine("Homing");
 
     gripperClose(&gripper);
-    MoveByDist(&motorz, -1000, 25);
-    MoveByAngle(&motor1, 200, 5);
-    MoveByAngle(&motor2, 200, 5);
+    MoveByDist(&motorz, -125.0, 20.0);
+    MoveByAngle(&motor1, 8.0, 5.0);
+    MoveByAngle(&motor2, 8.0, 5.0);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
@@ -406,9 +427,9 @@ void HomeMotors(void)
     HAL_Delay(1000);
 
     // Move back 6 degrees
-    double distZ = MoveByDist(&motorz, 2.0, 5);
-    double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1);
-    double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1);
+    double distZ = MoveByDist(&motorz, 2.0, 5.0);
+    double theta1 = MoveByAngle(&motor1, -6.0 / 180.0 * M_PI, 1.0);
+    double theta2 = MoveByAngle(&motor2, -6.0 / 180.0 * M_PI, 1.0);
 
     while (motor1.isMoving || motor2.isMoving || motorz.isMoving)
     {
@@ -425,6 +446,7 @@ void HomeMotors(void)
     PrintCaresianCoords(state.x, state.y);
 }
 
+#ifdef SG_90
 /**
  * @brief Closes the gripper
  *
@@ -446,6 +468,29 @@ void gripperClose(ServoMotor *gripper)
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->closedPosition / 200);
     gripper->isOpen = false;
 }
+#else
+/**
+ * @brief Closes the gripper
+ *
+ * @param gripper Gripper Object
+ */
+void gripperClose(ServoMotor *gripper)
+{
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->openPosition / 200);
+    gripper->isOpen = true;
+}
+
+/**
+ * @brief Opens the gripper
+ *
+ * @param gripper Gripper Object
+ */
+void gripperOpen(ServoMotor *gripper)
+{
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, htim2.Init.Period * gripper->closedPosition / 200);
+    gripper->isOpen = false;
+}
+#endif
 
 static void MX_TIM2_Init(void)
 {
