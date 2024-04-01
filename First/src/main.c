@@ -12,6 +12,8 @@
 // #define REPEATABILITY // For repeatability study
 // #define PRINT_HMI // For testing the HMI reads
 // #define IK_VAL
+// #define GRIPPER_TEST
+#define REVERSE
 
 UART_HandleTypeDef UartHandle;
 UART_HandleTypeDef huart2;
@@ -25,6 +27,7 @@ void RecieveCoordinates(double *x, double *y, double *z);
 void SerialDemo(void);
 void DevSerialDemo(void);
 void performTest(void);
+void reverseTest(void);
 void Manual_Mode(void);
 void SystemHealthCheck(void);
 
@@ -42,15 +45,17 @@ int main(void)
   Limit_Switch_Init();
   HMI_Init();
 
-  // gripperClose(&gripper);
   updateStateMachine("Unhomed");
-  // while (1)
-  // {
-  //   gripperOpen(&gripper);
-  //   HAL_Delay(1000);
-  //   gripperClose(&gripper);
-  //   HAL_Delay(1000);
-  // }
+
+#ifdef GRIPPER_TEST
+  while (1)
+  {
+    gripperOpen(&gripper);
+    HAL_Delay(1000);
+    gripperClose(&gripper);
+    HAL_Delay(1000);
+  }
+#endif
 
   SystemHealthCheck();
 
@@ -106,6 +111,19 @@ int main(void)
 
   // Home the robot
   HomeMotors();
+
+#ifdef REVERSE
+  while (HAL_GPIO_ReadPin(runTestButton.port, runTestButton.pin) != GPIO_PIN_RESET)
+  {
+    HAL_Delay(1);
+  }
+  HAL_Delay(500);
+  while (1)
+  {
+    performTest();
+    reverseTest();
+  }
+#endif
 
 #ifdef IK_VAL
   // Run serial demo to manually send the robot around to test the IK
@@ -384,7 +402,7 @@ void performTest(void)
 
   // Hacky Test Coordinates:
   double xStart = -195.0, yStart = -50.0;
-  double xEnd = 105.0, yEnd = 200.0;
+  double xEnd = 115.0, yEnd = 192.0;
   double zWood = 110.0, zPlatform = 30.0, zTravel = 5.0;
 
   double xy_speed = 5.0, z_speed = 25.0;
@@ -398,7 +416,7 @@ void performTest(void)
     HAL_Delay(1);
   }
 
-  HAL_Delay(1500);
+  HAL_Delay(500);
   gripperOpen(&gripper);
 
   while (motorz.isMoving)
@@ -438,7 +456,7 @@ void performTest(void)
   HAL_Delay(500);
   gripperOpen(&gripper);
   HAL_Delay(500);
-
+#ifndef REVERSE
   // Move off the dice
   MoveToZ(zTravel, z_speed);
   while (motorz.isMoving)
@@ -448,23 +466,69 @@ void performTest(void)
 
   HAL_Delay(300);
 
-  MoveTo(state.x, state.y + 70.0, xy_speed);
+  MoveTo(state.x + 10.0, state.y + 40.0, xy_speed);
   while (motor1.isMoving || motor2.isMoving)
   {
     HAL_Delay(1);
   }
-  HAL_Delay(300);
-  MoveTo(state.x - 70.0, state.y, xy_speed);
-  while (motor1.isMoving || motor2.isMoving)
-  {
-    HAL_Delay(1);
-  }
+#endif
+  // HAL_Delay(300);
+  // MoveTo(state.x - 60.0, state.y, xy_speed + 20.0);
+  // while (motor1.isMoving || motor2.isMoving)
+  // {
+  //   HAL_Delay(1);
+  // }
   // HAL_Delay(100);
   // MoveTo(state.x, state.y + 70, xy_speed);
   // while (motor1.isMoving || motor2.isMoving)
   // {
   //   HAL_Delay(1);
   // }
+}
+
+void reverseTest(void)
+{
+  state.testHasRun = 1;
+
+  // Actual Test Coordinates:
+  // double xStart = -202.5, yStart = 0.0;
+  // double xEnd = 122.5, yEnd = 175.0;
+  // double zWood = 110.0, zPlatform = 20.0, zTravel = 5.0;
+
+  // Hacky Test Coordinates:
+  double xStart = -195.0, yStart = -50.0;
+  double xEnd = 115.0, yEnd = 192.0;
+  double zWood = 110.0, zPlatform = 30.0, zTravel = 5.0;
+
+  double xy_speed = 5.0, z_speed = 25.0;
+
+  gripperClose(&gripper);
+  HAL_Delay(300);
+
+  MoveToZ(zTravel, z_speed);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+
+  HAL_Delay(300);
+
+  MoveTo(xStart, yStart, xy_speed);
+  while (motor1.isMoving || motor2.isMoving)
+  {
+    HAL_Delay(1);
+  }
+
+  MoveToZ(zWood, z_speed);
+  while (motorz.isMoving)
+  {
+    HAL_Delay(1);
+  }
+
+  // HAL_Delay(300);
+
+  // gripperOpen(&gripper);
+  // HAL_Delay(300);
 }
 
 /**
